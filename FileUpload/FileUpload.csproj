@@ -23,6 +23,7 @@
   <ItemGroup>
     <Folder Include="wwwroot\CompressedUploads\" />
     <Folder Include="wwwroot\Images\" />
+    <Folder Include="wwwroot\TempChunks\" />
     <Folder Include="wwwroot\Uploads\" />
   </ItemGroup>
 
