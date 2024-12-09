@@ -1,0 +1,110 @@
+﻿@model IEnumerable<FileUpload.Models.FileUploadModal>
+
+@{
+    ViewData["Title"] = "File Upload and List";
+    var ModelList = Model.ToList();
+}
+
+<h1 class="Heading">File Upload</h1>
+
+<div class="row">
+    <div class="form-div">
+        <form asp-action="Upload" asp-controller="FileUpload" id="uploadForm" enctype="multipart/form-data" method="post" class="form-form">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div>
+                <label>Select File</label>
+                <input type="file" name="file" id="fileInput" value="null" />
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Upload" class="btn btn-primary" id="uploadButton" disabled />
+            </div>
+        </form>
+    </div>
+    <div class="alert alert-danger" style="display: none;" id="error-message"></div>
+    <div class="alert alert-success" style="display: none;" id="success-message"></div>
+    <div class="Error">
+        @ViewBag.Message
+    </div>
+    <div class="Success">
+        @ViewBag.MessageSuccess
+    </div>
+</div>
+
+<hr />
+<h2>Uploaded Files</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No records found.
+    </div>
+}
+else
+{
+    <div class="table-div">
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Thumbnail</th>
+                    <th>File Name</th>
+                    <th>File Size</th>
+                    <th>Type</th>
+                    <th>Uploaded On</th>
+                    <th>
+                        <div class="buttons">
+                            Actions
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var file in Model)
+                {
+                    <tr>
+                        <td style="max-width:7rem">
+
+                            @if (file.Extention == ".xls" || file.Extention == ".xlsx")
+                            {
+                                <img src="/Images/Excel-logo.jfif" style="max-width:80%" />
+                            }
+                            else
+                            {
+                                <img src="/CompressedUploads/@file.Filename" style="max-width:100%" />
+                            }
+                        </td>
+                        <td>@file.OriginalFilename</td>
+                        <td>@file.FileSize KB</td>
+                        <td>@file.FileType</td>
+                        <td>@file.UploadedOn.ToString("g")</td>
+                        <td>
+                            <div class="buttons">
+                                <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary">View Details</a>
+
+                                <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info">Download</a>
+
+                                <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')" class="btn btn-danger">Delete</a>
+                            </div>
+
+
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<script>
+
+    const fileInput = document.getElementById('fileInput');
+    const uploadButton = document.getElementById('uploadButton');
+
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length > 0) {
+            uploadButton.disabled = false;
+        } else {
+            uploadButton.disabled = true;
+        }
+    });
+</script> 

@@ -1,0 +1,138 @@
+﻿@model FileUpload.Models.DataTransferModel
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+<style>
+    .radio-input input {
+        display: none;
+    }
+
+    .radio-input {
+        --container_width: 75px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        border-radius: 10px;
+        background-color: #ffffff;
+        color: #000000;
+        width: var(--container_width);
+        overflow: hidden;
+        border: 2px solid #000000;
+    }
+
+        .radio-input label {
+            width: 100%;
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+            font-weight: 600;
+            letter-spacing: -1px;
+            font-size: 14px;
+        }
+
+    .selection {
+        display: none;
+        position: absolute;
+        height: 100%;
+        width: calc(var(--container_width) / 2);
+        z-index: 0;
+        left: 0;
+        top: 0;
+        transition: 0.15s ease;
+    }
+
+    .radio-input label:nth-child(1):has(input:checked) {
+        color: #fff;
+    }
+
+    .radio-input label:nth-child(2):has(input:checked) {
+        color: #ffffff;
+    }
+
+    .radio-input label:nth-child(1):has(input:checked) ~ .selection {
+        background-color: rgb(255, 4, 4);
+        display: inline-block;
+    }
+
+    .radio-input label:nth-child(2):has(input:checked) ~ .selection {
+        background-color: rgb(0, 172, 29);
+        display: inline-block;
+    }
+
+    .radio-input label:nth-child(1):has(input:checked) ~ .selection {
+        transform: translateX(calc(var(--container_width) * 0 / 2));
+    }
+
+    .radio-input label:nth-child(2):has(input:checked) ~ .selection {
+        transform: translateX(calc(var(--container_width) * 1 / 2));
+    }
+</style>
+
+@if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
+{
+    if (Model.DirectionValue != null)
+    {
+        <div>
+            <strong>@Model.DirectionValue : @Model.SortedColumnName</strong>
+        </div>
+    }
+    <div class="detail-table">
+        <div class="table-div-main">
+            <div class="table-div-head">
+                <div class="div-table-row">
+                    @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
+                    {
+                        foreach (var column in Model.ExcelValue[0].Keys)
+                        {
+                            <div class="div-table-data" style="padding: 5px; text-align: left;">
+                                @* @column *@
+                                <div>
+                                    @column
+                                </div>
+
+                                <div class="radio-input">
+                                    <label>
+                                        <input onclick="sortExcel('@column','asc')" type="radio" id="value-1" name="value-radio" value="1" />
+                                        <span>▲</span>
+                                    </label>
+                                    <label>
+                                        <input onclick="sortExcel('@column','desc')" type="radio" id="value-2" name="value-radio" value="2" />
+                                        <span>▼</span>
+                                    </label>
+                                    <span class="selection"></span>
+                                </div>
+                                @* <button  onclick="sortExcel('@column','asc')">▲</button> *@
+                                @* <button  onclick="sortExcel('@column','desc')">▼</button> *@
+
+                            </div> <!-- Table headers from keys -->
+                        }
+                    }
+                </div>
+            </div>
+            <div class="table-div-body">
+                @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
+                {
+                    foreach (var row in Model.ExcelValue)
+                    {
+                        <div class="div-table-row">
+                            @foreach (var cell in row.Values)
+                            {
+                                <div class="div-table-data" style="padding: 8px;">@cell</div> <!-- Table cells from values -->
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="div-table-row">
+                        <div colspan="100" style="text-align: center;">No data available</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+

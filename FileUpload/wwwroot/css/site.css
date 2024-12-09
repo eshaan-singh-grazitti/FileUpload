@@ -1,0 +1,80 @@
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+.Heading {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.form-div {
+    display: flex;
+    /*    align-items:center;*/
+    justify-content: center;
+    /*    width:100%;*/
+    border: 1px solid black;
+    padding: 0.5rem;
+}
+
+.form-form {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+}
+
+.Error {
+    color: red;
+/*    font-weight: bold;*/
+}
+
+.Success {
+    color: green;
+    font-weight: bold;
+}
+.buttons{
+    display:flex;
+    justify-content:space-around;
+}
+.detail-table{
+    max-height:80vh;
+    max-width:80vw;
+    overflow:auto;
+}
+.uploadButton{
+    cursor:not-allowed;
+}
+.table-div {
+    max-height: 50vh;
+    max-width: 80vw;
+    overflow: auto;
+}
+.div-table-row{
+    display:flex;           
+}
+.div-table-data{
+    max-width:11vw;
+    min-width:11vw;
+    border:1px solid black;
+    display:flex;
+    justify-content:space-between
+}

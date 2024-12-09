@@ -1,0 +1,65 @@
+﻿@using System.Web
+@model FileUpload.Models.FileUploadModal
+
+@{
+    ViewData["Title"] = "File Details";
+}
+
+<h1>@Model.OriginalFilename's Details</h1>
+
+<div class="card">
+    <div class="card-header">
+        @Model.OriginalFilename
+    </div>
+    <div class="card-body">
+        <h4>Preview:</h4>
+        @if (Model.Extention == ".xls" || Model.Extention == ".xlsx")
+        {
+            <div id="excelPreviewContainer">
+            </div>
+        }
+        else{
+            
+            
+                <img src="/Uploads/@Model.Filename" alt="Uploaded Image" style="max-width: auto; height: 60vh;" />
+            
+        }
+
+        <p><strong>File Type:</strong> @Model.FileType</p>
+        <p><strong>Uploaded On:</strong> @Model.UploadedOn.ToString("f")</p>
+        <p><strong>File Size:</strong> @Model.FileSize KB</p>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Download" asp-route-id="@Model.Id" class="btn btn-info">Download</a>
+    <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = Model.Id })')" class="btn btn-danger">Delete</a>
+    <a asp-action="Index" class="btn btn-dark">Back to List</a>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+     $(document).ready(function() {
+        var param1 = "";
+        var param2 = "";
+        sortExcel(param1, param2);
+    });
+
+    function sortExcel(column, direction) {
+        $.ajax({
+            url: '@Url.Action("LoadExcelPreview", "FileUpload")',
+            type: 'POST',
+            data: {
+                fileId: @Model.Id, // Pass the file ID
+                sortColumn: column,
+                sortDirection: direction
+            },
+            success: function (result) {
+                console.log(result);
+                $("#excelPreviewContainer").html(result); // Use $j instead of $
+            },
+            error: function (xhr) {
+                alert("Error: " + xhr.responseText);
+            }
+        });
+    }
+</script>
