@@ -4,6 +4,56 @@
 @{
     ViewData["Title"] = "File Details";
 }
+<style>
+    .thumbnail {
+        cursor: pointer;
+    }
+
+
+    .fullscreen-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    #fullscreen:target .fullscreen-overlay {
+        display: flex;
+    }
+
+    .fullscreen-img {
+        max-width: 90%;
+        max-height: 90%;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 20px;
+        right: 50px;
+        background: #fff;
+        color: #333;
+        padding: 10px 15px;
+        border: 2px solid white;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 5px;
+        text-decoration: none;
+    }
+
+        .close-btn:hover {
+            border:2px solid white;
+            background: #333;
+            color: #fff;
+        }
+</style>
 
 <h1>@Model.OriginalFilename's Details</h1>
 
@@ -19,12 +69,19 @@
                 <button class="btn btn-primary" onclick="RefreshTable()">Refresh Table</button>
             </div>
             <div id="excelPreviewContainer">
-            </div> 
+            </div>
         }
         else
         {
-
-            <img src="/Uploads/@Model.Filename" alt="Uploaded Image" style="max-width: auto; height: 60vh;" />
+            <a href="#fullscreen">
+                <img src="/Uploads/@Model.Filename" alt="Uploaded Image" class="thumbnail" style="max-width: auto; height: 60vh;" />
+            </a>
+            <div id="fullscreen">
+                <div class="fullscreen-overlay">
+                    <a href="#" class="close-btn ">Close</a>
+                    <img src="/Uploads/@Model.Filename" alt="Fullscreen Image" class="fullscreen-img">
+                </div>
+            </div>
 
         }
 
