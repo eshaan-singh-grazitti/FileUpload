@@ -49,10 +49,16 @@
     }
 
         .close-btn:hover {
-            border:2px solid white;
+            border: 2px solid white;
             background: #333;
             color: #fff;
         }
+
+    .img-div{
+        max-width:80vw;
+        max-height:80vh;
+        overflow:auto;
+    }
 </style>
 
 <h1>@Model.OriginalFilename's Details</h1>
@@ -73,9 +79,11 @@
         }
         else
         {
-            <a href="#fullscreen">
-                <img src="/Uploads/@Model.Filename" alt="Uploaded Image" class="thumbnail" style="max-width: auto; height: 60vh;" />
-            </a>
+            <div class="img-div">
+                <a href="#fullscreen">
+                    <img src="/Uploads/@Model.Filename" alt="Uploaded Image" class="thumbnail" style="max-width: auto; height: 60vh;" />
+                </a>
+            </div>
             <div id="fullscreen">
                 <div class="fullscreen-overlay">
                     <a href="#" class="close-btn ">Close</a>

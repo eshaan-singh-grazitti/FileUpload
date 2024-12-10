@@ -8,11 +8,11 @@
 
 <style>
     .form {
-        margin:auto;
+        margin: auto;
         background-color: #fff;
-        box-shadow: 0 10px 60px rgb(218, 229, 255);
-        border: 1px solid rgb(159, 159, 160);
-        border-radius: 20px;
+        /* box-shadow: 0 10px 60px rgb(218, 229, 255); */
+        /* border: 1px solid rgb(159, 159, 160); */
+        /* border-radius: 20px; */
         padding: 1rem .7rem .7rem .7rem;
         text-align: center;
         font-size: 1.125rem;
@@ -84,6 +84,12 @@
             .file-input::file-selector-button:hover {
                 background: #0d45a5;
             }
+
+    #uploadButton:disabled {
+        pointer-events: auto;
+        cursor: not-allowed;
+    }
+
 </style>
 
 
@@ -108,7 +114,7 @@
         </form>
 
 
-        
+
     </div>
     <div class="alert alert-danger" style="display: none;" id="error-message"></div>
     <div class="alert alert-success" style="display: none;" id="success-message"></div>
@@ -156,7 +162,7 @@ else
 
                             @if (file.Extention == ".xls" || file.Extention == ".xlsx")
                             {
-                                <img src="/Images/Excel-logo.jfif" style="max-width:80%" />
+                                    <img src="/Images/Excel-logo.jfif" style="max-width:80%" />
                             }
                             else
                             {
