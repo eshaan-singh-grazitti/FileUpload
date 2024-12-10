@@ -67,3 +67,8 @@ body {
     display:flex;
     justify-content:space-between
 }
+.preview-div {
+    display: flex;
+    margin-bottom: 1rem;
+    flex-direction: row-reverse;
+}
