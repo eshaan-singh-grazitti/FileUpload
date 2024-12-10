@@ -152,48 +152,6 @@ namespace FileUpload.Controllers
             return RedirectToAction("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
         }
 
-        //public IActionResult PreviewExcel(string filePath, out List<Dictionary<string, string>> data)
-        //{
-        //    data = new List<Dictionary<string, string>>();
-        //    if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
-        //    {
-        //        return BadRequest("File not found.");
-        //    }
-
-        //    using var package = new ExcelPackage(new FileInfo(filePath));
-        //    if (package.Workbook.Worksheets.Count == 0)
-        //    {
-        //        return BadRequest("No worksheets found in the Excel file.");
-        //    }
-
-        //    var worksheet = package.Workbook.Worksheets.First(); // First worksheet
-        //    var rowCount = worksheet.Dimension?.Rows ?? 0;
-        //    var colCount = worksheet.Dimension?.Columns ?? 0;
-        //    var headers = new List<string>();
-        //    for (int col = 1; col <= colCount; col++)
-        //    {
-        //        headers.Add(worksheet.Cells[1, col].Text);
-        //    }
-
-        //    for (int row = 1; row <= rowCount; row++)
-        //    {
-        //        var rowData = new Dictionary<string, string>();
-        //        for (int col = 1; col <= colCount; col++)
-        //        {
-        //            var cellValue = worksheet.Cells[row, col].Text;
-        //            rowData[headers[col - 1]] = cellValue;
-        //            if (row == 1)
-        //            {
-        //                rowData[headers[col - 1]] = null;
-        //            }
-        //        }
-        //        data.Add(rowData);
-        //    }
-
-        //    return Json(data); // Send JSON data to frontend
-        //}
-
-
 
         private List<Dictionary<string, string>> PreviewExcel(string filePath, string fileExt)
         {
@@ -271,12 +229,7 @@ namespace FileUpload.Controllers
 
         }
 
-
-
-
         [HttpPost]
-
-
 
         public IActionResult LoadExcelPreview(int fileId, string sortColumn, string sortDirection)
         {
@@ -322,73 +275,6 @@ namespace FileUpload.Controllers
             return PartialView("_PreviewExcel", DTO);
         }
 
-
-
-
-
-
-        //public IActionResult LoadExcelPreview(int fileId, string sortColumn, string sortDirection)
-        //{
-        //    var file = _context.FileUploadModal.Find(fileId);
-        //    if (file == null)
-        //    {
-        //        return BadRequest("File Not Found");
-        //    }
-
-        //    string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
-
-        //    // Get the Excel data
-        //    var excelData = PreviewExcel(filePath, file.Extention);
-
-        //    // Apply sorting
-        //    if (!string.IsNullOrEmpty(sortColumn) && !string.IsNullOrEmpty(sortDirection))
-        //    {
-        //        if (sortDirection.ToLower() == "asc")
-        //        {
-        //            excelData = excelData.OrderBy(row => row[sortColumn]).ToList();
-        //        }
-        //        else if (sortDirection.ToLower() == "desc")
-        //        {
-        //            excelData = excelData.OrderByDescending(row => row[sortColumn]).ToList();
-        //        }
-        //    }
-        //    DTO.ExcelValue=excelData;
-
-
-        //    return PartialView("_PreviewExcel", DTO);
-        //}
-
-
-
-
-        //[Microsoft.AspNetCore.Mvc.Route("/FileUpload/Details/{id}")]
-        //public async Task<IActionResult> Details(int id)
-        //{
-        //    var file = await _context.FileUploadModal.FindAsync(id);
-        //    if (file == null)
-        //    {
-        //        return BadRequest("File Not Found");
-        //    }
-        //    string fileName = Path.GetFileName(file.Filename);
-        //    string fileExt = Path.GetExtension(file.Filename);
-        //    string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
-
-        //    if (fileExt == ".xls" || fileExt == ".xlsx")
-        //    {
-        //        PreviewExcel(filePath, out List<Dictionary<string, string>> data);
-        //        ViewBag.ExcelData = data;
-
-        //    }
-        //    else
-        //    {
-        //        ViewBag.ImageData = $"/Uploads/{fileName}";
-        //    }
-
-        //    return View(file);
-        //}
-
-
-
         public async Task<IActionResult> Details(int id)
         {
             var file = await _context.FileUploadModal.FindAsync(id);
@@ -403,7 +289,6 @@ namespace FileUpload.Controllers
             // Check file type
             if (fileExt == ".xls" || fileExt == ".xlsx")
             {
-                // Set a flag to identify Excel files in the view
 
                 // Optional: Load initial preview (default unsorted)
                 string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
@@ -412,11 +297,10 @@ namespace FileUpload.Controllers
             }
             else
             {
-                // Handle image preview
-                //DTO.ImageValue= $"/Uploads/{fileName}";
+                // It will go to the details page.
             }
 
-            return View(file); // Pass file data to the view
+            return View(file); 
         }
 
 
