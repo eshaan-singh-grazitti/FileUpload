@@ -11,7 +11,7 @@ namespace FileUpload.Controllers
 {
     public class FileUploadController : Controller
     {
-        private readonly string[] ext = { ".png", ".gif", ".jpeg", ".bmp", ".webp", ".jpg", ".svg+xml", ".svg", ".xls", ".xlsx", ".zip" };
+        private readonly string[] ext = { ".png", ".gif", ".jpeg", ".bmp", ".webp", ".jpg", ".svg", ".xls", ".xlsx", ".zip" };
         private readonly AppDbContext _context;
         DataTransferModel DTO = new DataTransferModel();
         public FileUploadController(AppDbContext context)
@@ -95,19 +95,29 @@ namespace FileUpload.Controllers
                         // Compress the file for thumbnails (no change in logic)
                         if (fileExt != ".xls" && fileExt != ".xlsx")
                         {
-                            using (var inputStream = file.OpenReadStream())
+                            if (fileExt == ".svg")
                             {
-                                using (var originalImage = Image.FromStream(inputStream))
+                                using (FileStream CompressedSvgPath = new FileStream(compressedFilePath, FileMode.Create))
                                 {
-                                    // Set up compression parameters
-                                    var jpegEncoder = ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
-                                    var encoderParams = new EncoderParameters(1);
-                                    encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, 1L); // Adjust quality (1-100)
-
-                                    // Save compressed image to file
-                                    using (var outputStream = new FileStream(compressedFilePath, FileMode.Create))
+                                    await file.CopyToAsync(CompressedSvgPath);
+                                }
+                            }
+                            else
+                            {
+                                using (var inputStream = file.OpenReadStream())
+                                {
+                                    using (var originalImage = Image.FromStream(inputStream))
                                     {
-                                        originalImage.Save(outputStream, jpegEncoder, encoderParams);
+                                        // Set up compression parameters
+                                        var jpegEncoder = ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
+                                        var encoderParams = new EncoderParameters(1);
+                                        encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, 1L); // Adjust quality (1-100)
+
+                                        // Save compressed image to file
+                                        using (var outputStream = new FileStream(compressedFilePath, FileMode.Create))
+                                        {
+                                            originalImage.Save(outputStream, jpegEncoder, encoderParams);
+                                        }
                                     }
                                 }
                             }
@@ -300,7 +310,7 @@ namespace FileUpload.Controllers
                 // It will go to the details page.
             }
 
-            return View(file); 
+            return View(file);
         }
 
 
