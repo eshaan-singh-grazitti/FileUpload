@@ -8,11 +8,11 @@
 
 <style>
     .form {
-        margin: auto;
+        margin: 1rem auto;
         background-color: #fff;
         /* box-shadow: 0 10px 60px rgb(218, 229, 255); */
         /* border: 1px solid rgb(159, 159, 160); */
-        /* border-radius: 20px; */
+        border-radius: 10px;
         padding: 1rem .7rem .7rem .7rem;
         text-align: center;
         font-size: 1.125rem;
@@ -34,8 +34,8 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 10px;
-        margin: 1rem 0rem;
+        padding: 2rem 1rem;
+        margin: 2rem 0rem;
         border-radius: 10px;
         border: 2px dashed rgb(171, 202, 255);
         color: #444;
@@ -58,6 +58,7 @@
         font-weight: bold;
         text-align: center;
         transition: color .2s ease-in-out;
+        margin: 1rem 0rem;
     }
 
     .file-input {
@@ -101,10 +102,11 @@
         border-radius: 5px;
         position: relative;
     }
-    #uploadButton:hover{
-        background-color: #0b5ed7;
-        border-color: #0a58ca;
-    }
+
+        #uploadButton:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
 
         #uploadButton:disabled {
             background-color: #61A1FE;
@@ -137,6 +139,21 @@
         opacity: 1;
     }
 
+    .Index_sMsg {
+        border: 2px solid #D4EDDA;
+        text-align: center;
+        margin: 2rem auto;
+        padding: 1.5rem 2rem;
+        background-color: #D4EDDA;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .row {
+        border: 2px dashed black;
+        border-radius: 10px;
+    }
+
 </style>
 
 
@@ -155,9 +172,6 @@
             </label>
 
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            @* <div class="form-group"> *@
-            @*     <input type="submit" value="Upload" class="btn btn-primary" id="uploadButton" disabled /> *@
-            @* </div> *@
 
 
             <div class="form-group" style="text-align: center; margin-top: 50px;">
@@ -170,83 +184,20 @@
     </div>
     <div class="alert alert-danger" style="display: none;" id="error-message"></div>
     <div class="alert alert-success" style="display: none;" id="success-message"></div>
-    <div class="Error">
-        @ViewBag.Message
-    </div>
-    <div class="Success">
-        @ViewBag.MessageSuccess
-    </div>
+
 </div>
-
-<hr />
-<h2>Uploaded Files</h2>
-
-@if (!Model.Any())
+@if (@ViewBag.MessageSuccess != null)
 {
-    <div class="alert alert-info">
-        No records found.
-    </div>
-}
-else
-{
-    <div class="table-div">
-
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Thumbnail</th>
-                    <th>File Name</th>
-                    <th>File Size</th>
-                    <th>Type</th>
-                    <th>Uploaded On</th>
-                    <th>
-                        <div class="buttons">
-                            Actions
-                        </div>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var file in Model)
-                {
-                    <tr>
-                        <td style="max-width:7rem">
-
-                            @if (file.Extention == ".xls" || file.Extention == ".xlsx")
-                            {
-                                <img src="/Images/Excel-logo.jfif" style="max-width:80%" />
-                            }
-                            else
-                            {
-                                <img src="/CompressedUploads/@file.Filename" style="max-width:100%" />
-                            }
-                        </td>
-                        <td>@file.OriginalFilename</td>
-                        <td>@file.FileSize KB</td>
-                        <td>@file.FileType</td>
-                        <td>@file.UploadedOn.ToString("g")</td>
-                        <td>
-                            <div class="buttons">
-                                <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary">View Details</a>
-
-                                <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info">Download</a>
-
-                                <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')" class="btn btn-danger">Delete</a>
-                            </div>
-
-
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="Success Index_sMsg">
+        @ViewBag.MessageSuccess
     </div>
 }
 
 <script>
-
     const fileInput = document.getElementById('fileInput');
     const uploadButton = document.getElementById('uploadButton');
+        const uploadForm = document.getElementById("uploadForm");
+
 
     fileInput.addEventListener('change', function() {
         if (fileInput.files.length > 0) {
@@ -255,4 +206,25 @@ else
             uploadButton.disabled = true;
         }
     });
+        uploadForm.addEventListener("submit", () => {
+        // Use session storage to indicate successful submission
+        sessionStorage.setItem("formSubmitted", "true");
+    });
+
+    // Check if form was recently submitted
+    window.addEventListener("DOMContentLoaded", () => {
+        if (sessionStorage.getItem("formSubmitted") === "true") {
+            // Show success alert
+            alert("File uploaded successfully!");
+
+            // Clear the file input value
+            fileInput.value = null;
+
+            // Clear session storage to prevent showing the alert again
+            sessionStorage.removeItem("formSubmitted");
+            window.location.replace(window.location.href);
+
+        }
+    });
+
 </script> 

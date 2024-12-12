@@ -1,0 +1,88 @@
+﻿@model IEnumerable<FileUpload.Models.FileUploadModal>
+
+@{
+    ViewData["Title"] = "Uploaded Files";
+}
+<style>
+    .DataGrid-Head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        margin-top: 1rem;
+    }
+</style>
+
+
+
+<div class="DataGrid-Head">
+    <h2>Uploaded Files</h2>
+    <a asp-action="Index" class="btn btn-primary">Back to File Upload</a>
+</div>
+<div class="Error">
+    @ViewBag.Message
+</div>
+<div class="Success">
+    @ViewBag.MessageSuccess
+</div>
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No records found.
+    </div>
+}
+else
+{
+    <div class="table-div">
+
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Thumbnail</th>
+                    <th>File Name</th>
+                    <th>File Size</th>
+                    <th>Type</th>
+                    <th>Uploaded On</th>
+                    <th>
+                        <div class="buttons">
+                            Actions
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var file in Model)
+                {
+                    <tr>
+                        <td style="max-width:7rem">
+
+                            @if (file.Extention == ".xls" || file.Extention == ".xlsx")
+                            {
+                                <img src="/Images/Excel-logo.jfif" style="max-width:80%" />
+                            }
+                            else
+                            {
+                                <img src="/CompressedUploads/@file.Filename" style="max-width:100%" />
+                            }
+                        </td>
+                        <td>@file.OriginalFilename</td>
+                        <td>@file.FileSize KB</td>
+                        <td>@file.FileType</td>
+                        <td>@file.UploadedOn.ToString("g")</td>
+                        <td>
+                            <div class="buttons">
+                                <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary">View Details</a>
+
+                                <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info">Download</a>
+
+                                <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')" class="btn btn-danger">Delete</a>
+                            </div>
+
+
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

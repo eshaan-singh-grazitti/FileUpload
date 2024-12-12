@@ -23,6 +23,17 @@ namespace FileUpload.Controllers
             var files = await _context.FileUploadModal.ToListAsync();
             return View(files);
         }
+        public async Task<IActionResult> DataGrid()
+        {
+            //var files = await _context.FileUploadModal.ToListAsync();
+            //return View(files);
+            return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+
+        }
+        public IActionResult Upload()
+        {
+            return View("Index");
+        }
 
         [HttpPost]
         [Microsoft.AspNetCore.Mvc.Route("/")]
@@ -58,11 +69,11 @@ namespace FileUpload.Controllers
                         await file.CopyToAsync(tempStream);
                     }
 
+                    string globalPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName).FullName, "Uploaded Folder", fileName);
                     // If all chunks are uploaded, merge them in parallel
                     if (chunkIndex + 1 == totalChunks)
                     {
                         string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
-                        string globalPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName).FullName, "Uploaded Folder", fileName);
                         string compressedFilePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\CompressedUploads", fileName);
 
                         // Create a list of tasks for merging chunks in parallel
@@ -159,8 +170,9 @@ namespace FileUpload.Controllers
                 Console.WriteLine(ex.Message);
             }
 
-            return RedirectToAction("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+            return RedirectToAction("Upload");
         }
+
 
 
         private List<Dictionary<string, string>> PreviewExcel(string filePath, string fileExt)
@@ -336,7 +348,6 @@ namespace FileUpload.Controllers
             return File(fileBytes, file.FileType, file.OriginalFilename);
         }
 
-        [Microsoft.AspNetCore.Mvc.Route("/")]
         public async Task<IActionResult> Delete(int id)
         {
 
@@ -371,7 +382,7 @@ namespace FileUpload.Controllers
 
                 ViewBag.MessageSuccess = "File Deleted Successfully";
             }
-            return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+            return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
         }
     }
 }

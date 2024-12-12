@@ -102,7 +102,7 @@
 <div class="mt-3">
     <a asp-action="Download" asp-route-id="@Model.Id" class="btn btn-info">Download</a>
     <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = Model.Id })')" class="btn btn-danger">Delete</a>
-    <a asp-action="Index" class="btn btn-dark">Back to List</a>
+    <a asp-action="DataGrid" class="btn btn-dark">Back to List</a>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
