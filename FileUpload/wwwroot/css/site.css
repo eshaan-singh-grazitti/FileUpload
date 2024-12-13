@@ -39,7 +39,7 @@ body {
 .Success {
     color: green;
     font-weight: bold;
-    margin-left:1rem;
+/*    margin-left:1rem;*/
 }
 .buttons{
     display:flex;
@@ -53,11 +53,7 @@ body {
 .uploadButton{
     cursor:not-allowed;
 }
-.table-div {
-    max-height: 50vh;
-    max-width: 80vw;
-    overflow: auto;
-}
+
 .div-table-row{
     display:flex;           
 }
@@ -72,9 +68,4 @@ body {
     display: flex;
     margin-bottom: 1rem;
     flex-direction: row-reverse;
-}
-.row {
-    border: 2px dashed black;
-    border-radius: 1.5rem;
-    padding-bottom: 1rem;
 }

@@ -11,14 +11,31 @@
         margin-bottom: 2rem;
         margin-top: 1rem;
     }
+
+    .hover-btn {
+        position: fixed; 
+        bottom: 70px;
+        right: 50px; 
+        z-index: 1000; 
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        text-decoration: none;
+        font-size: 16px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
 </style>
 
 
 
 <div class="DataGrid-Head">
     <h2>Uploaded Files</h2>
-    <a asp-action="Index" class="btn btn-primary">Back to File Upload</a>
 </div>
+    <a asp-action="Index" class="btn btn-primary hover-btn"><img src="~/Images/back-button.png" /></a>
 <div class="Error">
     @ViewBag.Message
 </div>
