@@ -68,3 +68,7 @@ body {
     margin-bottom: 1rem;
     flex-direction: row-reverse;
 }
+.navbar-nav .nav-link.active {
+    font-weight: bold;
+    border-bottom: 2px solid #007bff; /* Adds an underline */
+}
