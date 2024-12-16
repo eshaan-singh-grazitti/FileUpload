@@ -10,8 +10,6 @@
     .form {
         margin: 1rem auto;
         background-color: #fff;
-        /* box-shadow: 0 10px 60px rgb(218, 229, 255); */
-        /* border: 1px solid rgb(159, 159, 160); */
         border-radius: 10px;
         padding: 1rem .7rem .7rem .7rem;
         text-align: center;
@@ -133,7 +131,6 @@
         transition: opacity 0.3s ease;
     }
 
-    /* Show tooltip on hover */
     #uploadButton:hover:disabled .tooltip-msg {
         visibility: visible;
         opacity: 1;
@@ -142,30 +139,57 @@
     .Index_sMsg {
         border: 2px solid #D4EDDA;
         text-align: center;
-        margin: 2rem auto;
         padding: 1.5rem 2rem;
         background-color: #D4EDDA;
         border-radius: 1rem;
         margin-bottom: 2rem;
+        width: 50vw;
     }
 
-    .row {
-        /* border: 2px dashed black; */
+    .Index_sMsg1 {
+        border: 2px solid #f8d7da;
+        text-align: center;
+        padding: 1.5rem 2rem;
+        background-color: ##f8d7da;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        width: 50vw;
+    }
+
+    .row, .form-div {
         border-radius: 10px;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-        ackground-color: #fff;
-        width:50vw;
+        background-color: #fff;
+        width: 50vw;
     }
 
     body {
         background: radial-gradient(circle, #ffffff, #dac8c8);
     }
-    .main-div{
-        height:80vh;
+
+    .main-div {
+        height: 80vh;
         display: flex;
         justify-content: center;
         align-items: center;
+        flex-direction: column;
+        gap: 2rem;
     }
+
+    #loader {
+        text-align: center;
+        color: #555;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        margin: auto;
+        color: #007bff;
+    }
+
 </style>
 
 
@@ -173,44 +197,61 @@
 <div class="main-div">
     <div class="row">
         <div class="form-div">
-
-            <form asp-action="Upload" asp-controller="FileUpload" id="uploadForm" enctype="multipart/form-data" method="post" class="form">
+            <form asp-action="Upload" asp-controller="FileUpload" id="uploadForm" enctype="multipart/form-data"
+                  method="post" class="form">
                 <span class="form-title">Upload your file</span>
 
-                <label for="fileInput" class="drop-container" type="file">
+                <label for="fileInput" class="drop-container">
                     <span class="drop-title">Drop files here</span>
                     or
-                    <input type="file" name="file" required id="fileInput" class="file-input" value="null" />
+                    <input type="file" name="file" required id="fileInput" class="file-input" />
                 </label>
 
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-
                 <div class="form-group" style="text-align: center; margin-top: 50px;">
-                    <button type="submit" value="Upload" id="uploadButton" class="btn btn-primary" disabled>
+                    <button type="submit" id="uploadButton" class="btn btn-primary" disabled>
                         Upload
                         <span class="tooltip-msg">Select a file to upload</span>
                     </button>
                 </div>
             </form>
+
+            <!-- Loader -->
+            <div id="loader" style="display: none; text-align: center; margin-top: 20px;">
+                <div class="spinner-border" role="status">
+                </div>
+                <p>Uploading... Please wait.</p>
+            </div>
         </div>
+
+
+
         <div class="alert alert-danger" style="display: none;" id="error-message"></div>
         <div class="alert alert-success" style="display: none;" id="success-message"></div>
 
     </div>
+    @if (@ViewBag.MessageSuccess != null)
+    {
+        <div class="Success Index_sMsg">
+            @ViewBag.MessageSuccess
+        </div>
+    }
+    @if (@ViewBag.Message != null)
+    {
+        <div class="Error Index_sMsg1">
+            @ViewBag.Message
+        </div>
+    }
 </div>
-@if (@ViewBag.MessageSuccess != null)
-{
-    <div class="Success Index_sMsg">
-        @ViewBag.MessageSuccess
-    </div>
-}
 
 <script>
 
     const fileInput = document.getElementById('fileInput');
     const uploadButton = document.getElementById('uploadButton');
         const uploadForm = document.getElementById("uploadForm");
+            const loader = document.getElementById('loader');
+
 
 
     fileInput.addEventListener('change', function() {
@@ -223,23 +264,22 @@
         uploadForm.addEventListener("submit", () => {
         // Use session storage to indicate successful submission
         sessionStorage.setItem("formSubmitted", "true");
+                loader.style.display = 'block'; 
+
     });
 
     // Check if form was recently submitted
     window.addEventListener("DOMContentLoaded", () => {
         if (sessionStorage.getItem("formSubmitted") === "true") {
-            // Show success alert
-            alert("File uploaded successfully!");
-
-            // Clear the file input value
             fileInput.value = null;
-
-            // Clear session storage to prevent showing the alert again
             sessionStorage.removeItem("formSubmitted");
+            setTimeout(()=>{
             window.location.replace(window.location.href);
+            },2000);
 
         }
     });
+
 
 
 </script> 

@@ -20,6 +20,7 @@ namespace FileUpload.Controllers
         }
         public async Task<IActionResult> Index()
         {
+            TempData["message"] = ViewBag.Message;
             var files = await _context.FileUploadModal.ToListAsync();
             return View(files);
         }
@@ -30,10 +31,7 @@ namespace FileUpload.Controllers
             return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
 
         }
-        public IActionResult Upload()
-        {
-            return View("Index");
-        }
+
 
         [HttpPost]
         [Microsoft.AspNetCore.Mvc.Route("/")]
@@ -150,7 +148,7 @@ namespace FileUpload.Controllers
                         };
                         _context.FileUploadModal.Add(fileUploadModal);
                         await _context.SaveChangesAsync();
-                        ViewBag.MessageSuccess = "File uploaded successfully.";
+                        ViewBag.MessageSuccess = "File uploaded successfully";
                     }
                     else
                     {
@@ -170,7 +168,7 @@ namespace FileUpload.Controllers
                 Console.WriteLine(ex.Message);
             }
 
-            return RedirectToAction("Upload");
+            return RedirectToAction("Index");
         }
 
 
@@ -222,7 +220,7 @@ namespace FileUpload.Controllers
             {
                 using (FileStream file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 {
-                    var workbook = new HSSFWorkbook(file);  // Use HSSFWorkbook for .xls files
+                    var workbook = new HSSFWorkbook(file);  // Use HSSFWorkbook for .xls filesx
                     var sheet = workbook.GetSheetAt(0);  // First sheet in the workbook
 
                     var headers = new List<string>();
@@ -347,6 +345,7 @@ namespace FileUpload.Controllers
 
             return File(fileBytes, file.FileType, file.OriginalFilename);
         }
+
 
         public async Task<IActionResult> Delete(int id)
         {

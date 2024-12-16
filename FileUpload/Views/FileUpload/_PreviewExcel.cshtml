@@ -88,7 +88,6 @@
                         foreach (var column in Model.ExcelValue[0].Keys)
                         {
                             <div class="div-table-data" style="padding: 5px; text-align: left;">
-                                @* @column *@
                                 <div>
                                     @column
                                 </div>
@@ -104,10 +103,8 @@
                                     </label>
                                     <span class="selection"></span>
                                 </div>
-                                @* <button  onclick="sortExcel('@column','asc')">▲</button> *@
-                                @* <button  onclick="sortExcel('@column','desc')">▼</button> *@
 
-                            </div> <!-- Table headers from keys -->
+                            </div> 
                         }
                     }
                 </div>
@@ -120,7 +117,7 @@
                         <div class="div-table-row">
                             @foreach (var cell in row.Values)
                             {
-                                <div class="div-table-data" style="padding: 8px;">@cell</div> <!-- Table cells from values -->
+                                <div class="div-table-data" style="padding: 8px;">@cell</div> 
                             }
                         </div>
                     }

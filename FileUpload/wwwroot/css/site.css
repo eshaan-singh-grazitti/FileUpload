@@ -39,7 +39,6 @@ body {
 .Success {
     color: green;
     font-weight: bold;
-/*    margin-left:1rem;*/
 }
 .buttons{
     display:flex;

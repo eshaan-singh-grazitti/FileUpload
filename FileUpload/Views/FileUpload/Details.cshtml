@@ -117,13 +117,13 @@
             url: '@Url.Action("LoadExcelPreview", "FileUpload")',
             type: 'POST',
             data: {
-                fileId: @Model.Id, // Pass the file ID
+                fileId: @Model.Id, 
                 sortColumn: column,
                 sortDirection: direction
             },
             success: function (result) {
                 console.log(result);
-                $("#excelPreviewContainer").html(result); // Use $j instead of $
+                $("#excelPreviewContainer").html(result); 
             },
             error: function (xhr) {
                 alert("Error: " + xhr.responseText);

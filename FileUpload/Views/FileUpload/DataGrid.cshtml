@@ -12,21 +12,33 @@
         margin-top: 1rem;
     }
 
-    .hover-btn {
-        position: fixed; 
-        bottom: 70px;
-        right: 50px; 
-        z-index: 1000; 
-        padding: 10px;
+    .go-to-top-btn {
+        position: fixed; /* Stays in a fixed position on the screen */
+        bottom: 70px; /* Distance from the bottom */
+        right: 50px; /* Distance from the right */
+        z-index: 1000; /* Ensures it stays above other elements */
+        padding: 10px 15px;
         background-color: #007bff;
         color: white;
         border: none;
-        border-radius: 50%;
-        text-decoration: none;
-        font-size: 16px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        transition: background-color 0.3s ease, transform 0.2s ease;
+        border-radius: 50px;
+        font-size: 14px;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        opacity: 0; /* Initially hidden */
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
     }
+
+        .go-to-top-btn:hover {
+            background-color: #0056b3;
+            transform: scale(1.1); /* Slight zoom effect on hover */
+        }
+
+        .go-to-top-btn.visible {
+            opacity: 1; /* Make the button visible */
+            visibility: visible; /* Ensure it's interactable */
+        }
 
 </style>
 
@@ -34,8 +46,8 @@
 
 <div class="DataGrid-Head">
     <h2>Uploaded Files</h2>
+    <a asp-action="Index" class="btn btn-primary">Back to File Upload</a>
 </div>
-    <a asp-action="Index" class="btn btn-primary hover-btn"><img src="~/Images/back-button.png" /></a>
 <div class="Error">
     @ViewBag.Message
 </div>
@@ -103,3 +115,26 @@ else
         </table>
     </div>
 }
+<button id="goToTopButton" class="go-to-top-btn">↑ Go to Top</button>
+<script>
+    // Get the button element
+    const goToTopButton = document.getElementById('goToTopButton');
+
+    // Show the button when the user scrolls down 100px
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            goToTopButton.classList.add('visible');
+        } else {
+            goToTopButton.classList.remove('visible');
+        }
+    });
+
+    // Scroll smoothly to the top when the button is clicked
+    goToTopButton.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    });
+
+</script>
