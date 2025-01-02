@@ -18,12 +18,14 @@ namespace FileUpload.Controllers
         {
             _context = context;
         }
+
         public async Task<IActionResult> Index()
         {
             TempData["message"] = ViewBag.Message;
             var files = await _context.FileUploadModal.ToListAsync();
             return View(files);
         }
+
         public async Task<IActionResult> DataGrid()
         {
             //var files = await _context.FileUploadModal.ToListAsync();
@@ -31,7 +33,6 @@ namespace FileUpload.Controllers
             return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
 
         }
-
 
         [HttpPost]
         [Microsoft.AspNetCore.Mvc.Route("/")]
@@ -171,8 +172,6 @@ namespace FileUpload.Controllers
             return RedirectToAction("Index");
         }
 
-
-
         private List<Dictionary<string, string>> PreviewExcel(string filePath, string fileExt)
         {
             var data = new List<Dictionary<string, string>>();
@@ -250,7 +249,6 @@ namespace FileUpload.Controllers
         }
 
         [HttpPost]
-
         public IActionResult LoadExcelPreview(int fileId, string sortColumn, string sortDirection)
         {
             var file = _context.FileUploadModal.Find(fileId);
@@ -323,14 +321,6 @@ namespace FileUpload.Controllers
             return View(file);
         }
 
-
-
-
-
-
-
-
-
         public async Task<IActionResult> Download(int id)
         {
             var file = await _context.FileUploadModal.FindAsync(id);
@@ -345,7 +335,6 @@ namespace FileUpload.Controllers
 
             return File(fileBytes, file.FileType, file.OriginalFilename);
         }
-
 
         public async Task<IActionResult> Delete(int id)
         {
@@ -383,5 +372,6 @@ namespace FileUpload.Controllers
             }
             return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
         }
+
     }
 }
