@@ -274,7 +274,10 @@
             fileInput.value = null;
             sessionStorage.removeItem("formSubmitted");
             setTimeout(()=>{
-            window.location.replace(window.location.href);
+            // window.location.replace(window.location.href);
+            // location.reload(true);
+            // location.href = location.href;
+            window.location.href = "/FileUpload/Index";
             },2000);
 
         }
