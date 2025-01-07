@@ -37,7 +37,7 @@
 
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
     <div class="container-fluid">
-        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">FileUpload</a>
+        <a class="navbar-brand" asp-area="" asp-controller="FileUpload" asp-action="Index">FileUpload</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                 aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -56,18 +56,7 @@
                     <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "FileUpload" && ViewContext.RouteData.Values["Action"]?.ToString() == "DataGrid") ? "active" : "text-dark")" 
                        asp-area="" asp-controller="FileUpload" asp-action="DataGrid">Uploaded Files</a>
                 </li>
-                
-                <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "Admin") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="Secure" asp-action="Admin">Admin</a>
-                </li>
-                <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "User") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="Secure" asp-action="User">User</a>
-                </li>
             </ul>
-                    <partial name="_LoginPartial.cshtml" />
-
         </div>
     </div>
 </nav>
