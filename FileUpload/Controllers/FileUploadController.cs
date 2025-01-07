@@ -1,11 +1,13 @@
 ﻿using FileUpload.Data;
 using FileUpload.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NPOI.HSSF.UserModel;
 using OfficeOpenXml;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Security.Claims;
 
 namespace FileUpload.Controllers
 {
@@ -13,10 +15,12 @@ namespace FileUpload.Controllers
     {
         private readonly string[] ext = { ".png", ".gif", ".jpeg", ".bmp", ".webp", ".jpg", ".svg", ".xls", ".xlsx", ".zip" };
         private readonly AppDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
         DataTransferModel DTO = new DataTransferModel();
-        public FileUploadController(AppDbContext context)
+        public FileUploadController(AppDbContext context, UserManager<IdentityUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index()
@@ -25,12 +29,33 @@ namespace FileUpload.Controllers
             var files = await _context.FileUploadModal.ToListAsync();
             return View(files);
         }
-
+        [HttpGet]
         public async Task<IActionResult> DataGrid()
         {
-            //var files = await _context.FileUploadModal.ToListAsync();
-            //return View(files);
-            return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get logged-in user ID
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+            else
+            {
+                bool isInRole = await _userManager.IsInRoleAsync(user, "User");
+                if (isInRole)
+                {
+                    var userFiles = await _context.FileUploadModal
+                        .Where(f => f.UserId == userId)
+                        .ToListAsync();
+
+                    return View(userFiles);
+                }
+                else
+                {
+                    return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                }
+            }
+
 
         }
 
@@ -136,6 +161,7 @@ namespace FileUpload.Controllers
                         double fileSizeInBytes = fileInfo.Length;
                         double fileSizeInKB = fileSizeInBytes / 1024;
                         double fileSize = Math.Round(fileSizeInKB, 2);
+                        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                         var fileUploadModal = new FileUploadModal
                         {
                             OriginalFilename = originalFileName + fileExt,
@@ -145,7 +171,8 @@ namespace FileUpload.Controllers
                             FileSize = fileSize,
                             CompressedPath = compressedFilePath,
                             Extention = fileExt,
-                            UploadedOn = DateTime.Now
+                            UploadedOn = DateTime.Now,
+                            UserId = userId
                         };
                         _context.FileUploadModal.Add(fileUploadModal);
                         await _context.SaveChangesAsync();

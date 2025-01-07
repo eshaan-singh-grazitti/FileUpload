@@ -14,5 +14,6 @@ namespace FileUpload.Models
         public string CompressedPath { get; set; } = null!;
         public string Extention { get; set; } = null!;
         public DateTime UploadedOn { get; set; }
+        public string UserId { get; set; }
     }
 }
