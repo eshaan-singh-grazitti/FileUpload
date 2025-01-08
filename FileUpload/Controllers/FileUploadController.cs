@@ -1,6 +1,9 @@
-﻿using FileUpload.Data;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using FileUpload.Data;
 using FileUpload.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NPOI.HSSF.UserModel;
@@ -319,6 +322,99 @@ namespace FileUpload.Controllers
             // Return the partial view with sorted data
             return PartialView("_PreviewExcel", DTO);
         }
+
+
+        [HttpGet]
+        public IActionResult SaveUpdatedExcel()
+        {
+            return View();
+        }
+
+
+        [HttpPost]
+        public IActionResult SaveUpdatedExcel([FromBody] DataRequest data)
+
+        {
+            try
+            {
+                string fileName = data.FileName;
+                List<List<string>> updatedData = data.UpdatedData;
+                // Reconstruct the full file path
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
+
+                // Ensure the file exists
+                if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+                {
+                    return BadRequest("File not found.");
+                }
+
+                // Determine file extension
+                var fileExt = Path.GetExtension(filePath).ToLower();
+
+                if (fileExt == ".xlsx")
+                {
+                    using var package = new ExcelPackage(new FileInfo(filePath));
+
+                    if (package.Workbook.Worksheets.Count == 0)
+                    {
+                        throw new InvalidOperationException("No worksheets found in the Excel file.");
+                    }
+
+                    var worksheet = package.Workbook.Worksheets.First(); // First worksheet
+                    var rowCount = updatedData.Count;
+                    var colCount = updatedData.FirstOrDefault()?.Count ?? 0;
+
+                    // Update data in the worksheet
+                    for (int row = 0; row < rowCount; row++)
+                    {
+                        for (int col = 0; col < colCount; col++)
+                        {
+                            worksheet.Cells[row + 2, col + 1].Value = updatedData[row][col]; // Data starts from row 2
+                        }
+                    }
+
+                    // Save changes
+                    package.Save();
+                }
+                else if (fileExt == ".xls")
+                {
+                    using (FileStream file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
+                    {
+                        var workbook = new HSSFWorkbook(file);
+                        var sheet = workbook.GetSheetAt(0); // First sheet
+
+                        // Update data in the sheet
+                        for (int row = 0; row < updatedData.Count; row++)
+                        {
+                            var dataRow = sheet.GetRow(row + 1) ?? sheet.CreateRow(row + 1); // Data starts from row 1
+                            for (int col = 0; col < updatedData[row].Count; col++)
+                            {
+                                var cell = dataRow.GetCell(col) ?? dataRow.CreateCell(col);
+                                cell.SetCellValue(updatedData[row][col]);
+                            }
+                        }
+
+                        // Save changes to the file
+                        using (var outputFile = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                        {
+                            workbook.Write(outputFile);
+                        }
+                    }
+                }
+                else
+                {
+                    return BadRequest("Unsupported file format.");
+                }
+
+                return Json(new { success = true, message = "Excel file updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
+
+
 
         public async Task<IActionResult> Details(int id)
         {

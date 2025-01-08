@@ -69,6 +69,9 @@
     .radio-input label:nth-child(2):has(input:checked) ~ .selection {
         transform: translateX(calc(var(--container_width) * 1 / 2));
     }
+
+
+
 </style>
 
 @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
@@ -104,7 +107,7 @@
                                     <span class="selection"></span>
                                 </div>
 
-                            </div> 
+                            </div>
                         }
                     }
                 </div>
@@ -117,7 +120,7 @@
                         <div class="div-table-row">
                             @foreach (var cell in row.Values)
                             {
-                                <div class="div-table-data" style="padding: 8px;">@cell</div> 
+                                <div class="div-table-data" style="padding: 8px;" contenteditable="true">@cell</div>
                             }
                         </div>
                     }

@@ -1,5 +1,4 @@
-﻿@using System.Web
-@model FileUpload.Models.FileUploadModal
+﻿@model FileUpload.Models.FileUploadModal
 
 @{
     ViewData["Title"] = "File Details";
@@ -32,7 +31,7 @@
         max-height: 90%;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
         border-radius: 8px;
-        min-width:60vw;
+        min-width: 60vw;
     }
 
     .close-btn {
@@ -77,6 +76,9 @@
             </div>
             <div id="excelPreviewContainer">
             </div>
+            <button id="saveChanges" style="margin-top: 1rem;" class="btn btn-primary" >Save Changes</button>
+            @* data - filepath = @Html.Raw(Json.Serialize(Model.Data)) *@
+
         }
         else
         {
@@ -107,24 +109,29 @@
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
-     $(document).ready(function() {
+        $(document).ready(function () {
         var param1 = "";
         var param2 = "";
         sortExcel(param1, param2);
-    });
+        });
+    function RefreshTable() {
+        var param1 = "";
+        var param2 = "";
+        sortExcel(param1, param2);
+    }
 
     function sortExcel(column, direction) {
         $.ajax({
             url: '@Url.Action("LoadExcelPreview", "FileUpload")',
             type: 'POST',
             data: {
-                fileId: @Model.Id, 
+                fileId: @Model.Id,
                 sortColumn: column,
                 sortDirection: direction
             },
             success: function (result) {
                 console.log(result);
-                $("#excelPreviewContainer").html(result); 
+                $("#excelPreviewContainer").html(result);
             },
             error: function (xhr) {
                 alert("Error: " + xhr.responseText);
@@ -132,12 +139,59 @@
         });
     }
 
-    function RefreshTable(){
-        $(document).ready(function() {
-        var param1 = "";
-        var param2 = "";
-        sortExcel(param1, param2);
-    });
+        document.getElementById("saveChanges").addEventListener("click", function () {
+            debugger;
+            const rows = document.querySelectorAll(".table-div-body .div-table-row");
+            const updatedData = [];
+
+            rows.forEach((row) => {
+                const rowData = [];
+                row.querySelectorAll(".div-table-data").forEach((cell) => {
+                    rowData.push(cell.textContent.trim());
+                });
+                if (rowData.length > 0) updatedData.push(rowData);
+            });
+            const fileName = '@Model.Filename';
+            // const filepath = filepath1.replace(/\\/g,'\\\\');
+            // Call SendData with the updated data
+            SendData(fileName,updatedData);
+        });
+
+    function SendData(fileName,updatedData) {
+        $.ajax({
+            url: '@Url.Action("SaveUpdatedExcel", "FileUpload")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                FileName:fileName,
+                UpdatedData: updatedData
+            }),
+            success: function (result) {
+                if (result.success) {
+                    alert(result.message);
+                    // Optionally, update the UI with new data
+                    $("#excelPreviewContainer").html(result.newPreview); // Adjust according to the response
+                } else {
+                    console.log(result.message);
+                    alert(result.message);
+                }
+            },
+            error: function (xhr) {
+                alert("Error: " + xhr.responseText);
+            }
+        });
     }
+
+            // Send to the server via AJAX
+    //     fetch('@Url.Action("SaveUpdatedExcel", "FileUpload")', {
+    //         method: "POST",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: JSON.stringify({filePath:"@Model.Data",updatedData:updatedData }),
+    //     })
+    //         .then((response) => response.json())
+    //         .then((result) => alert("Changes saved successfully!"))
+    //         .catch((error) => console.error("Error:", error));
+    // });
+
 
 </script>
