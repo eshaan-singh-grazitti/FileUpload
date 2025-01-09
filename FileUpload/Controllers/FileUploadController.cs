@@ -1,4 +1,6 @@
-﻿using DocumentFormat.OpenXml.Wordprocessing;
+﻿using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Vml.Office;
+using DocumentFormat.OpenXml.Wordprocessing;
 using FileUpload.Data;
 using FileUpload.Models;
 using Microsoft.AspNetCore.Hosting;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NPOI.HSSF.UserModel;
+using NPOI.SS.Formula.Functions;
 using OfficeOpenXml;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -20,6 +23,7 @@ namespace FileUpload.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         DataTransferModel DTO = new DataTransferModel();
+        ExcelChangesViewModel EXM = new ExcelChangesViewModel();
         public FileUploadController(AppDbContext context, UserManager<IdentityUser> userManager)
         {
             _context = context;
@@ -202,7 +206,7 @@ namespace FileUpload.Controllers
             return RedirectToAction("Index");
         }
 
-        private List<Dictionary<string, string>> PreviewExcel(string filePath, string fileExt)
+        public static List<Dictionary<string, string>> PreviewExcel(string filePath, string fileExt)
         {
             var data = new List<Dictionary<string, string>>();
 
@@ -323,22 +327,21 @@ namespace FileUpload.Controllers
             return PartialView("_PreviewExcel", DTO);
         }
 
-
         [HttpGet]
         public IActionResult SaveUpdatedExcel()
         {
             return View();
         }
 
-
         [HttpPost]
-        public IActionResult SaveUpdatedExcel([FromBody] DataRequest data)
+        public async Task<IActionResult> SaveUpdatedExcel([FromBody] DataRequest data)
 
         {
             try
             {
                 string fileName = data.FileName;
                 List<List<string>> updatedData = data.UpdatedData;
+                int fileid = data.Fileid;
                 // Reconstruct the full file path
                 string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
 
@@ -369,10 +372,30 @@ namespace FileUpload.Controllers
                     {
                         for (int col = 0; col < colCount; col++)
                         {
-                            worksheet.Cells[row + 2, col + 1].Value = updatedData[row][col]; // Data starts from row 2
+                            var cellValue = worksheet.Cells[row + 2, col + 1].Text;
+                            var newValue = updatedData[row][col].ToString();
+                            if (cellValue != newValue)
+                            {
+                                var change = new ExcelChanges
+                                {
+                                    UserID = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                                    UserName = User.Identity.Name,
+                                    FileId = fileid,
+                                    FileName = fileName,
+                                    Column = col,
+                                    Row = row,
+                                    OldValue = cellValue,
+                                    NewValue = newValue,
+                                    ChangeDate = DateTime.Now
+                                };
+                                
+                                await _context.ExcelChanges.AddAsync(change);
+                                
+                                worksheet.Cells[row + 2, col + 1].Value = updatedData[row][col]; // Data starts from row 2
+                            }
                         }
                     }
-
+                    await _context.SaveChangesAsync();
                     // Save changes
                     package.Save();
                 }
@@ -390,10 +413,30 @@ namespace FileUpload.Controllers
                             for (int col = 0; col < updatedData[row].Count; col++)
                             {
                                 var cell = dataRow.GetCell(col) ?? dataRow.CreateCell(col);
-                                cell.SetCellValue(updatedData[row][col]);
+                                var cellValue = cell.ToString();
+                                var newValue = updatedData[row][col].ToString();
+
+                                if (cellValue != newValue)
+                                {
+                                    var change = new ExcelChanges
+                                    {
+                                        UserID = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                                        UserName = User.Identity.Name,
+                                        FileId = fileid,
+                                        FileName = fileName,
+                                        Column = col,
+                                        Row = row,
+                                        OldValue = cellValue,
+                                        NewValue = newValue,
+                                        ChangeDate = DateTime.Now
+                                    };
+                                    
+                                    await _context.ExcelChanges.AddAsync(change);
+                                    cell.SetCellValue(updatedData[row][col]);
+                                }
                             }
                         }
-
+                        await _context.SaveChangesAsync();
                         // Save changes to the file
                         using (var outputFile = new FileStream(filePath, FileMode.Create, FileAccess.Write))
                         {
@@ -414,8 +457,18 @@ namespace FileUpload.Controllers
             }
         }
 
-
-
+        public IActionResult Changes(int id)
+        {
+            var file = _context.FileUploadModal.Find(id);
+            var file1 = _context.ExcelChanges.FirstOrDefault(f => f.FileId == id);
+            var filename = file.Filename;
+            string fileExt = Path.GetExtension(filename).ToLower();
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", filename);
+            EXM.ExcelData = PreviewExcel(filePath, fileExt);
+            EXM.row = file1.Row;
+            EXM.column = file1.Column;
+            return View(EXM);
+        }
         public async Task<IActionResult> Details(int id)
         {
             var file = await _context.FileUploadModal.FindAsync(id);

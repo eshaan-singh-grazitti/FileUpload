@@ -58,12 +58,12 @@
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "Admin") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="Secure" asp-action="Admin">Admin</a>
+                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "AdminDashboard") ? "active" : "text-dark")"
+                               asp-area="" asp-controller="Secure" asp-action="AdminDashboard">Admin</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "User") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="Secure" asp-action="User">User</a>
+                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "UserDashboard") ? "active" : "text-dark")"
+                               asp-area="" asp-controller="Secure" asp-action="UserDashboard">User</a>
                         </li>
                     </ul>
                     <partial name="_LoginPartial.cshtml" />

@@ -1,0 +1,31 @@
+﻿@model IEnumerable<FileUpload.Models.ExcelChanges>
+
+@{
+    ViewData["Title"] = "Excel Changes Log";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>User Name</th>
+            <th>File Name</th>
+            <th>Change Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var change in Model)
+        {
+            <tr>
+                <td>@change.UserName</td>
+                <td>@change.FileName</td>
+                <td>@change.ChangeDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                <td>
+                    <a asp-action="Changes" asp-controller="FileUpload" asp-route-id="@change.FileId" class="btn btn-info">View Changes</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

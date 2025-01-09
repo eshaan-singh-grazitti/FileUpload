@@ -12,6 +12,7 @@ namespace FileUpload.Data
 
         }
         public DbSet<FileUploadModal> FileUploadModal { get; set; }
+        public DbSet<ExcelChanges>ExcelChanges { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

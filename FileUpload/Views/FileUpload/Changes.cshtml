@@ -1,0 +1,107 @@
+﻿@model FileUpload.Models.ExcelChangesViewModel
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+
+@* @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0) *@
+@* { *@
+@*     <div class="detail-table"> *@
+@*         <div class="table-div-main"> *@
+@*             <div class="table-div-head"> *@
+@*                 <div class="div-table-row"> *@
+@*                     @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0) *@
+@*                     { *@
+@*                         foreach (var column in Model.ExcelValue[0].Keys) *@
+@*                         { *@
+@*                             <div class="div-table-data" style="padding: 5px; text-align: left;"> *@
+@*                                 <div> *@
+@*                                     @column *@
+@*                                 </div> *@
+
+@*                             </div> *@
+@*                         } *@
+@*                     } *@
+@*                 </div> *@
+@*             </div> *@
+@*             <div class="table-div-body"> *@
+@*                 @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0) *@
+@*                 { *@
+@*                     foreach (var row in Model.ExcelValue) *@
+@*                     { *@
+@*                         <div class="div-table-row"> *@
+@*                             @foreach (var cell in row.Values) *@
+@*                             { *@
+@*                                 <div class="div-table-data" style="padding: 8px;">@cell</div> *@
+@*                             } *@
+@*                         </div> *@
+@*                     } *@
+@*                 } *@
+@*                 else *@
+@*                 { *@
+@*                     <div class="div-table-row"> *@
+@*                         <div colspan="100" style="text-align: center;">No data available</div> *@
+@*                     </div> *@
+@*                 } *@
+@*             </div> *@
+@*         </div> *@
+@*     </div> *@
+@* } *@
+
+
+@if (Model.ExcelData != null && Model.ExcelData.Count > 0)
+{
+    <div class="detail-table">
+        <div class="table-div-main">
+            <div class="table-div-head">
+                <div class="div-table-row">
+                    @foreach (var column in Model.ExcelData[0].Keys)
+                    {
+                        <div class="div-table-data" style="padding: 5px; text-align: left;">
+                            <div>
+                                @column
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="table-div-body">
+                @foreach (var row in Model.ExcelData.Select((value, index) => new { RowData = value, RowIndex = index })) // Get row index (1-based)
+                {
+                    <div class="div-table-row">
+                        @foreach (var cell in row.RowData.Values.Select((value, index) => new { CellValue = value, ColumnIndex = index  })) // Get column index (1-based)
+                        {
+                        // Check if there's a change for this cell
+                            @* var change = Model.Changes.FirstOrDefault(c => c.Row == row.RowIndex && c.Column == cell.ColumnIndex); *@
+
+                            if (Model.row == row.RowIndex && Model.column == cell.ColumnIndex)
+                            {
+                                <div class="div-table-data" style="padding: 8px; background-color:yellow;">
+                                    @cell.CellValue
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="div-table-data" style="padding: 8px;">
+                                    @cell.CellValue
+                                </div>
+                            }
+
+
+                            // Apply a different color if there's a change
+                            @* var cellStyle = change != null ? "background-color: yellow;" : ""; *@
+
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="div-table-row">
+        <div colspan="100" style="text-align: center;">No data available</div>
+    </div>
+}
+

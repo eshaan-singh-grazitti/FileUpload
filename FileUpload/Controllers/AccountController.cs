@@ -67,11 +67,11 @@ namespace FileUpload.Controllers
                         if (role == "Admin")
                         {
                             // Redirect to User page
-                            return RedirectToAction("Admin", "Secure");
+                            return RedirectToAction("AdminDashboard", "Secure");
                         }
                         else
                         {
-                            return RedirectToAction("User", "Secure");
+                            return RedirectToAction("UserDashboard", "Secure");
                         }
                     }
 
