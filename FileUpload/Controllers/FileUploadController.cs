@@ -1,15 +1,10 @@
-﻿using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Vml.Office;
-using DocumentFormat.OpenXml.Wordprocessing;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
 using FileUpload.Data;
 using FileUpload.Models;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NPOI.HSSF.UserModel;
-using NPOI.SS.Formula.Functions;
 using OfficeOpenXml;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -388,9 +383,9 @@ namespace FileUpload.Controllers
                                     NewValue = newValue,
                                     ChangeDate = DateTime.Now
                                 };
-                                
+
                                 await _context.ExcelChanges.AddAsync(change);
-                                
+
                                 worksheet.Cells[row + 2, col + 1].Value = updatedData[row][col]; // Data starts from row 2
                             }
                         }
@@ -430,7 +425,8 @@ namespace FileUpload.Controllers
                                         NewValue = newValue,
                                         ChangeDate = DateTime.Now
                                     };
-                                    
+
+
                                     await _context.ExcelChanges.AddAsync(change);
                                     cell.SetCellValue(updatedData[row][col]);
                                 }
@@ -457,16 +453,41 @@ namespace FileUpload.Controllers
             }
         }
 
-        public IActionResult Changes(int id)
+        public IActionResult Changes(int Id)
         {
-            var file = _context.FileUploadModal.Find(id);
-            var file1 = _context.ExcelChanges.FirstOrDefault(f => f.FileId == id);
+            var file = _context.FileUploadModal.Find(Id);
+            var file1 = _context.ExcelChanges
+                .Where(f => f.FileId == Id)
+                .GroupBy(f => new { f.FileName, f.UserID })
+                .Select(g => g
+                .OrderBy(f => f.Id)
+                .Select(f => new { f.Row, f.Column })
+                .ToList())
+                .FirstOrDefault();
             var filename = file.Filename;
             string fileExt = Path.GetExtension(filename).ToLower();
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", filename);
-            EXM.ExcelData = PreviewExcel(filePath, fileExt);
-            EXM.row = file1.Row;
-            EXM.column = file1.Column;
+
+            if (file1 != null && file1.Count > 0)
+            {
+                // Ensure EXM is not null
+
+                EXM = new ExcelChangesViewModel
+                {
+                    ExcelData = PreviewExcel(filePath, fileExt),
+                    row = new List<int>(),
+                    column = new List<int>()
+                };
+
+
+                for (var i = 0; i < file1.Count; i++)
+                {
+
+                    EXM.row.Add(file1[i].Row);
+                    EXM.column.Add(file1[i].Column);
+                }
+            }
+
             return View(EXM);
         }
         public async Task<IActionResult> Details(int id)
@@ -515,6 +536,8 @@ namespace FileUpload.Controllers
         public async Task<IActionResult> Delete(int id)
         {
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get logged-in user ID
+            var user = await _userManager.FindByIdAsync(userId);
 
             var file = await _context.FileUploadModal.FindAsync(id);
             if (file != null)
@@ -546,7 +569,19 @@ namespace FileUpload.Controllers
 
                 ViewBag.MessageSuccess = "File Deleted Successfully";
             }
-            return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+            bool isInRole = await _userManager.IsInRoleAsync(user, "User");
+            if (isInRole)
+            {
+                var userFiles = await _context.FileUploadModal
+                    .Where(f => f.UserId == userId)
+                    .ToListAsync();
+
+                return View("DataGrid",userFiles);
+            }
+            else
+            {
+                return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+            }
         }
 
     }
