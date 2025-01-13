@@ -153,12 +153,13 @@
             });
             const fileName = '@Model.Filename';
             const fileid = '@Model.Id'
+            const ogFileName = '@Model.OriginalFilename'
             // const filepath = filepath1.replace(/\\/g,'\\\\');
             // Call SendData with the updated data
-            SendData(fileid,fileName,updatedData);
+            SendData(fileid,fileName,updatedData,ogFileName);
         });
 
-    function SendData(fileid,fileName,updatedData) {
+    function SendData(fileid,fileName,updatedData,ogFileName) {
         $.ajax({
             url: '@Url.Action("SaveUpdatedExcel", "FileUpload")',
             type: 'POST',
@@ -167,6 +168,7 @@
                 Fileid:fileid,
                 FileName:fileName,
                 UpdatedData: updatedData
+                OgFileName = ogFileName
             }),
             success: function (result) {
                 if (result.success) {

@@ -335,6 +335,7 @@ namespace FileUpload.Controllers
             try
             {
                 string fileName = data.FileName;
+                string ogFileName = data.OgFileName;
                 List<List<string>> updatedData = data.UpdatedData;
                 int fileid = data.Fileid;
                 // Reconstruct the full file path
@@ -376,7 +377,7 @@ namespace FileUpload.Controllers
                                     UserID = User.FindFirstValue(ClaimTypes.NameIdentifier),
                                     UserName = User.Identity.Name,
                                     FileId = fileid,
-                                    FileName = fileName,
+                                    FileName = ogFileName,
                                     Column = col,
                                     Row = row,
                                     OldValue = cellValue,
@@ -461,7 +462,6 @@ namespace FileUpload.Controllers
                 .GroupBy(f => new { f.FileName, f.UserID })
                 .Select(g => g
                 .OrderBy(f => f.Id)
-                .Select(f => new { f.Row, f.Column })
                 .ToList())
                 .FirstOrDefault();
             var filename = file.Filename;
@@ -476,15 +476,16 @@ namespace FileUpload.Controllers
                 {
                     ExcelData = PreviewExcel(filePath, fileExt),
                     row = new List<int>(),
-                    column = new List<int>()
+                    column = new List<int>(),
+                    ExcelChangesData = new List<ExcelChanges>()
                 };
 
 
                 for (var i = 0; i < file1.Count; i++)
                 {
-
                     EXM.row.Add(file1[i].Row);
                     EXM.column.Add(file1[i].Column);
+                    EXM.ExcelChangesData.Add(file1[i]);
                 }
             }
 

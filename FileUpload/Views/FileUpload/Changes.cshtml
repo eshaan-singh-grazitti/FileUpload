@@ -2,13 +2,15 @@
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
+@{
+
+}
 
 <style>
     .table-main-div {
         max-width: 80vw;
         max-height: 80vh;
         overflow: auto;
-        border: 2px solid black;
     }
 
     .header-div {
@@ -16,7 +18,35 @@
         justify-content: space-between;
         align-items: center;
     }
+
+    .table-main-div {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+
+
+    .detail-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .detail-table th {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .detail-table td {
+            vertical-align: middle;
+        }
+
+    .alert {
+        font-size: 1.2rem;
+    }
 </style>
+
+
 
 
 <div class="header-div mb-2">
@@ -27,75 +57,90 @@
     <a asp-action="AdminDashboard" asp-controller="Secure" class="btn btn-primary mt-2">Admin Dashboard</a>
 </div>
 
-
-<div class="table-main-div">
-
+<div class="table-main-div mt-4">
     @if (Model.ExcelData != null && Model.ExcelData.Count > 0)
     {
-        <table class="detail-table table table-bordered table-striped table-hover">
-            <thead>
-                <tr>
-                    @foreach (var column in Model.ExcelData[0].Keys)
-                    {
-                        <th style="padding: 5px; text-align: left;">
-                            @column
-                        </th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var row in Model.ExcelData.Select((value, index) => new { RowData = value, RowIndex = index })) // Get row index (0-based)
-                {
-
-
+        <div class=" rounded ">
+            <table class="detail-table table table-striped table-hover align-middle text-center">
+                <thead class="table-dark">
                     <tr>
-                        @foreach (var cell in row.RowData.Values.Select((value, index) => new { CellValue = value, ColumnIndex = index })) // Get column index (0-based)
+                        @foreach (var column in Model.ExcelData[0].Keys)
                         {
-                            // Check if both row and column are present in Model.row and Model.column
-                            bool isColChanged = Model.column.Contains(cell.ColumnIndex);  // 1-based row index
-                            bool isRowChanged = Model.row.Contains(row.RowIndex);
-
-
-                            if (isRowChanged)
+                            <th class="px-4 py-3 fw-bold border-end" style="min-width:9rem;">
+                                @column
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.ExcelData.Select((value, index) => new { RowData = value, RowIndex = index })) // Get row index (0-based)
+                    {
+                        <tr class="table-row">
+                            @foreach (var cell in row.RowData.Values.Select((value, index) => new { CellValue = value, ColumnIndex = index })) // Get column index (0-based)
                             {
-                                if (isColChanged && isRowChanged)
+                                // Check if both row and column are present in Model.row and Model.column
+                                bool isColChanged = Model.column.Contains(cell.ColumnIndex);  // 1-based row index
+                                bool isRowChanged = Model.row.Contains(row.RowIndex);
+
+                                int rIndex = @row.RowIndex;
+                                rIndex++;
+                                int cIndex = @cell.ColumnIndex;
+                                cIndex++;
+
+                                if (isRowChanged)
                                 {
-                                    <td style="padding: 8px; background-color: yellow; min-width:1rem; border:2px solid black;">
-                                        @cell.CellValue
-                                    </td>
-                                    Model.row.Remove(row.RowIndex);
-                                    Model.column.Remove(cell.ColumnIndex);
+                                    if (isColChanged && isRowChanged)
+                                    {
+                                        var dataFromDb = Model.ExcelChangesData
+                                        .Where(a => a.Row == @row.RowIndex && a.Column == cell.ColumnIndex)
+                                        .OrderByDescending(u => u.ChangeDate)
+                                        .ToList()
+                                        .FirstOrDefault();
+
+                                        <td class="px-4 py-3 fw-bold text-dark bg-warning bg-opacity-25 border-end border-dark"
+                                            data-bs-toggle="tooltip"
+                                            data-bs-html="true"
+                                            title="<strong>New Value:</strong> @cell.CellValue<br>
+                                                   <strong>Old Value:</strong> @dataFromDb?.OldValue">
+                                            @cell.CellValue
+                                        </td>
+
+                                        Model.row.Remove(row.RowIndex);
+                                        Model.column.Remove(cell.ColumnIndex);
+                                    }
+                                    else
+                                    {
+                                        <td class="px-4 py-3 border-end">@cell.CellValue</td>
+                                    }
                                 }
                                 else
                                 {
-
-                                    <td style="padding: 8px; min-width:9rem;">
-                                        @cell.CellValue
-                                    </td>
+                                    <td class="px-4 py-3 border-end">@cell.CellValue</td>
                                 }
                             }
-                            else
-                            {
-
-                                <td style="padding: 8px; min-width:9rem;">
-                                    @cell.CellValue
-                                </td>
-                            }
-
-                        }
-                    </tr>
-
-                }
-
-            </tbody>
-        </table>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
     else
     {
-        <div class="alert alert-info m-0">
-            No data available
+        <div class="alert alert-info text-center p-4 shadow">
+            <i class="bi bi-info-circle"></i> No data available
         </div>
     }
-
 </div>
 
+
+<script>
+        document.addEventListener("DOMContentLoaded", function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl, {
+                html: true
+            });
+        });
+    });
+
+</script>
