@@ -44,24 +44,70 @@
     .alert {
         font-size: 1.2rem;
     }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .overlay-content {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 20px;
+        width: 80vw;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+        max-height: 90%;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    #showChangesButton {
+        display: block;
+        margin: auto;
+    }
 </style>
 
 
+
+
+
+
+<div id="changesOverlay" class="overlay hidden">
+    <div class="overlay-content">
+        <button id="closeOverlayButton" class="btn btn-danger mb-2">Close</button>
+        <partial name="_ChangesTable.cshtml" />
+    </div>
+</div>
 
 
 <div class="header-div mb-2">
     <h1>
         Changes
     </h1>
-
-    <a asp-action="AdminDashboard" asp-controller="Secure" class="btn btn-primary mt-2">Admin Dashboard</a>
+    <div class="d-flex justify-content-center align-items-center gap-1">
+        <button id="showChangesButton" class="btn btn-primary">
+            Show Changes
+        </button>
+        <a asp-action="AdminDashboard" asp-controller="Secure" class="btn btn-primary ">Admin Dashboard</a>
+    </div>
 </div>
 
 <div class="table-main-div mt-4">
     @if (Model.ExcelData != null && Model.ExcelData.Count > 0)
     {
         <div class=" rounded ">
-            <table class="detail-table table table-striped table-hover align-middle text-center">
+            <table class="detail-table table table-striped align-middle text-center">
                 <thead class="table-dark">
                     <tr>
                         @foreach (var column in Model.ExcelData[0].Keys)
@@ -98,6 +144,7 @@
                                         .FirstOrDefault();
 
                                         <td class="px-4 py-3 fw-bold text-dark bg-warning bg-opacity-25 border-end border-dark"
+                                        style="cursor:pointer;"
                                             data-bs-toggle="tooltip"
                                             data-bs-html="true"
                                             title="<strong>New Value:</strong> @cell.CellValue<br>
@@ -141,6 +188,13 @@
                 html: true
             });
         });
+    });
+    document.getElementById("showChangesButton").addEventListener("click", function () {
+        document.getElementById("changesOverlay").classList.remove("hidden");
+    });
+
+    document.getElementById("closeOverlayButton").addEventListener("click", function () {
+        document.getElementById("changesOverlay").classList.add("hidden");
     });
 
 </script>
