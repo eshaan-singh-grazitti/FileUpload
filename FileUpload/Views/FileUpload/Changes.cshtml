@@ -76,6 +76,9 @@
         display: block;
         margin: auto;
     }
+    .overlay-btn{
+       
+    }
 </style>
 
 
@@ -85,7 +88,9 @@
 
 <div id="changesOverlay" class="overlay hidden">
     <div class="overlay-content">
-        <button id="closeOverlayButton" class="btn btn-danger mb-2">Close</button>
+        <div class="overlay-btn d-flex flex-row-reverse">
+            <button id="closeOverlayButton" class="btn btn-danger mb-2">Close</button>
+        </div>
         <partial name="_ChangesTable.cshtml" />
     </div>
 </div>
@@ -144,13 +149,13 @@
                                         .FirstOrDefault();
 
                                         <td class="px-4 py-3 fw-bold text-dark bg-warning bg-opacity-25 border-end border-dark"
-                                        style="cursor:pointer;"
+                                            style="cursor:pointer;"
                                             data-bs-toggle="tooltip"
                                             data-bs-html="true"
                                             title="<strong>New Value:</strong> @cell.CellValue<br>
                                                    <strong>Old Value:</strong> @dataFromDb?.OldValue">
                                             @cell.CellValue
-                                        </td>
+                                                                                </td>
 
                                         Model.row.Remove(row.RowIndex);
                                         Model.column.Remove(cell.ColumnIndex);
