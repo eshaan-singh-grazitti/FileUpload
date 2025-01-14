@@ -44,28 +44,45 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "FileUpload" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="FileUpload" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["Action"]?.ToString() == "Privacy") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "FileUpload" && ViewContext.RouteData.Values["Action"]?.ToString() == "DataGrid") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="FileUpload" asp-action="DataGrid">Uploaded Files</a>
-                        </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "AdminDashboard") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="Secure" asp-action="AdminDashboard">Admin</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "UserDashboard") ? "active" : "text-dark")"
-                               asp-area="" asp-controller="Secure" asp-action="UserDashboard">User</a>
-                        </li>
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "FileUpload" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index") ? "active" : "text-dark")"
+                                   asp-area="" asp-controller="FileUpload" asp-action="Index">Home</a>
+                            </li>
+                            if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "FileUpload" && ViewContext.RouteData.Values["Action"]?.ToString() == "DataGrid") ? "active" : "text-dark")"
+                                       asp-area="" asp-controller="FileUpload" asp-action="DataGrid">Uploaded Files</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "AdminDashboard") ? "active" : "text-dark")"
+                                       asp-area="" asp-controller="Secure" asp-action="AdminDashboard">Admin Dashboard</a>
+                                </li>
+                            }
+                            else if (User.IsInRole("User"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "FileUpload" && ViewContext.RouteData.Values["Action"]?.ToString() == "DataGrid") ? "active" : "text-dark")"
+                                       asp-area="" asp-controller="FileUpload" asp-action="DataGrid">Uploaded Files</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Secure" && ViewContext.RouteData.Values["Action"]?.ToString() == "UserDashboard") ? "active" : "text-dark")"
+                                       asp-area="" asp-controller="Secure" asp-action="UserDashboard">User Dashboard</a>
+                                </li>
+                            }
+                        }
+                        @if (!User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @((ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["Action"]?.ToString() == "Privacy") ? "active" : "text-dark")"
+                                   asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            </li>
+                        }
                     </ul>
+
                     <partial name="_LoginPartial.cshtml" />
 
                 </div>

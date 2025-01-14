@@ -48,6 +48,8 @@ namespace FileUpload.Controllers
                 {
                     var userFiles = await _context.FileUploadModal
                         .Where(f => f.UserId == userId)
+                        .Where(f => f.IsDeleted == false)
+                        .OrderByDescending(f => f.UploadedOn)
                         .ToListAsync();
 
                     return View(userFiles);
@@ -174,7 +176,8 @@ namespace FileUpload.Controllers
                             CompressedPath = compressedFilePath,
                             Extention = fileExt,
                             UploadedOn = DateTime.Now,
-                            UserId = userId
+                            UserId = userId,
+                            IsDeleted = false
                         };
                         _context.FileUploadModal.Add(fileUploadModal);
                         await _context.SaveChangesAsync();
@@ -537,35 +540,46 @@ namespace FileUpload.Controllers
         public async Task<IActionResult> Delete(int id)
         {
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get logged-in user ID
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); 
             var user = await _userManager.FindByIdAsync(userId);
 
             var file = await _context.FileUploadModal.FindAsync(id);
             if (file != null)
             {
-                string fileExt = file.Extention;
-                string filePath = file.Data;
-                string UploadFolder = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
-                if (fileExt == ".xls" || fileExt == ".xlsx")
+                //string fileExt = file.Extention;
+                //string filePath = file.Data;
+                //string UploadFolder = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
+                //if (fileExt == ".xls" || fileExt == ".xlsx")
+                //{
+                //    if (System.IO.File.Exists(filePath) && System.IO.File.Exists(filePath))
+                //    {
+                //        System.IO.File.Delete(filePath);
+                //        System.IO.File.Delete(UploadFolder);
+                //    }
+                //}
+                //else
+                //{
+                //    string CompressedfilePath = file.CompressedPath;
+
+                //    if (System.IO.File.Exists(filePath) && System.IO.File.Exists(CompressedfilePath) && System.IO.File.Exists(UploadFolder))
+                //    {
+                //        System.IO.File.Delete(filePath);
+                //        System.IO.File.Delete(CompressedfilePath);
+                //        System.IO.File.Delete(UploadFolder);
+                //    }
+                //}
+                //_context.FileUploadModal.Remove(file);
+
+                file.IsDeleted = true;
+                if (user.UserName == "admin@abc.com")
                 {
-                    if (System.IO.File.Exists(filePath) && System.IO.File.Exists(filePath))
-                    {
-                        System.IO.File.Delete(filePath);
-                        System.IO.File.Delete(UploadFolder);
-                    }
+                    file.DeletedBy = "Admin";
                 }
                 else
                 {
-                    string CompressedfilePath = file.CompressedPath;
-
-                    if (System.IO.File.Exists(filePath) && System.IO.File.Exists(CompressedfilePath) && System.IO.File.Exists(UploadFolder))
-                    {
-                        System.IO.File.Delete(filePath);
-                        System.IO.File.Delete(CompressedfilePath);
-                        System.IO.File.Delete(UploadFolder);
-                    }
+                    file.DeletedBy = user.UserName;
                 }
-                _context.FileUploadModal.Remove(file);
+
                 await _context.SaveChangesAsync();
 
                 ViewBag.MessageSuccess = "File Deleted Successfully";
@@ -575,9 +589,11 @@ namespace FileUpload.Controllers
             {
                 var userFiles = await _context.FileUploadModal
                     .Where(f => f.UserId == userId)
+                    .Where(a => a.IsDeleted == false)
+                    .OrderByDescending(f=>f.UploadedOn)
                     .ToListAsync();
 
-                return View("DataGrid",userFiles);
+                return View("DataGrid", userFiles);
             }
             else
             {

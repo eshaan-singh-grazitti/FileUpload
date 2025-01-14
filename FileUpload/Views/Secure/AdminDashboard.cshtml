@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Excel Changes Log";
+    int serialNo = 1;
 }
 
 <h2>@ViewData["Title"]</h2>
@@ -9,6 +10,7 @@
 <table class="table table-striped">
     <thead>
         <tr>
+            <th>Serial Number</th>
             <th>User Name</th>
             <th>File Name</th>
             <th>Change Date</th>
@@ -19,6 +21,7 @@
         @foreach (var change in Model)
         {
             <tr>
+                <td>@serialNo</td>
                 <td>@change.UserName</td>
                 <td>@change.FileName</td>
                 <td>@change.ChangeDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
@@ -26,6 +29,7 @@
                     <a asp-action="Changes" asp-controller="FileUpload" asp-route-id="@change.FileId" class="btn btn-info">View Changes</a>
                 </td>
             </tr>
+            serialNo++;
         }
     </tbody>
 </table>

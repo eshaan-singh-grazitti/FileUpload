@@ -3,6 +3,9 @@
 *@
 @{
 }
-<h1>
-    Welcome User
-</h1>
+<div class="text-center">
+    <h1>Welcome, @User.Identity.Name!</h1>
+    <p>We're glad to have you here.<br /> Explore your file management options below:</p>
+    <a asp-action="DataGrid" asp-controller="FileUpload" class="btn btn-primary">Uploaded Files</a>
+    <a asp-action="Index" asp-controller="FileUpload" class="btn btn-primary">File Uploader</a>
+</div>
