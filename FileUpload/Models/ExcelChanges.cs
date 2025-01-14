@@ -37,5 +37,6 @@ namespace FileUpload.Models
 
         [Required]
         public DateTime ChangeDate { get; set; }
+
     }
 }

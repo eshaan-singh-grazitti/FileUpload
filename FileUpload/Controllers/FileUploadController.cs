@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using FileUpload.Data;
 using FileUpload.Models;
 using Microsoft.AspNetCore.Identity;
@@ -480,7 +481,9 @@ namespace FileUpload.Controllers
                     ExcelData = PreviewExcel(filePath, fileExt),
                     row = new List<int>(),
                     column = new List<int>(),
-                    ExcelChangesData = new List<ExcelChanges>()
+                    ExcelChangesData = new List<ExcelChanges>(),
+                    isDeleted = file.IsDeleted,
+                    DeletedBy = file.DeletedBy
                 };
 
 
@@ -544,6 +547,7 @@ namespace FileUpload.Controllers
             var user = await _userManager.FindByIdAsync(userId);
 
             var file = await _context.FileUploadModal.FindAsync(id);
+            
             if (file != null)
             {
                 //string fileExt = file.Extention;
@@ -579,6 +583,7 @@ namespace FileUpload.Controllers
                 {
                     file.DeletedBy = user.UserName;
                 }
+                
 
                 await _context.SaveChangesAsync();
 

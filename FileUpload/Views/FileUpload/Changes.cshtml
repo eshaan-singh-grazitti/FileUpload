@@ -1,9 +1,10 @@
 ﻿@model FileUpload.Models.ExcelChangesViewModel
 @*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860;
+
 *@
 @{
-
+    ViewData["Title"] = "File Changes";
 }
 
 <style>
@@ -82,11 +83,12 @@
 </style>
 
 
-
-
-
-
-
+@if (Model.isDeleted)
+{
+    <div class="alert alert-danger text-center">
+        This File is Deleted By<strong> @Model.DeletedBy</strong>
+    </div>
+}
 
 <div id="changesOverlay" class="overlay hidden">
     <div class="overlay-content">
