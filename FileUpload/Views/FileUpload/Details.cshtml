@@ -63,6 +63,9 @@
     .editable {
         display: none;
     }
+    .btna{
+        width:10rem;
+    }
 </style>
 
 <h1>@Model.OriginalFilename's Details</h1>
@@ -80,8 +83,8 @@
             </div>
             <div id="excelPreviewContainer">
             </div>
-            <button class="btn btn-warning" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
-            <button id="saveChanges" class="btn btn-primary editable">Save Changes</button>
+            <button class="btn btn-warning btna" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
+            <button id="saveChanges" class="btn btn-primary editable btna">Save Changes</button>
 
 
         }
