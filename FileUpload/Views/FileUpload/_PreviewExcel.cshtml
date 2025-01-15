@@ -83,14 +83,14 @@
         </div>
     }
     <div class="detail-table">
-        <div class="table-div-main">
+        <div class="table-div-main table">
             <div class="table-div-head">
                 <div class="div-table-row">
                     @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
                     {
                         foreach (var column in Model.ExcelValue[0].Keys)
                         {
-                            <div class="div-table-data" style="padding: 5px; text-align: left;">
+                            <div class="div-table-data table-dark" style="padding: 5px; text-align: left;">
                                 <div>
                                     @column
                                 </div>
