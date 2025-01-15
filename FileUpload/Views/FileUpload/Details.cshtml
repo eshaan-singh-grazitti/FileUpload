@@ -59,6 +59,10 @@
         max-height: 80vh;
         overflow: auto;
     }
+
+    .editable {
+        display: none;
+    }
 </style>
 
 <h1>@Model.OriginalFilename's Details</h1>
@@ -76,8 +80,9 @@
             </div>
             <div id="excelPreviewContainer">
             </div>
-            <button id="saveChanges" style="margin-top: 1rem;" class="btn btn-primary" >Save Changes</button>
-            @* data - filepath = @Html.Raw(Json.Serialize(Model.Data)) *@
+            <button class="btn btn-warning" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
+            <button id="saveChanges" class="btn btn-primary editable">Save Changes</button>
+
 
         }
         else
@@ -140,7 +145,6 @@
     }
 
         document.getElementById("saveChanges").addEventListener("click", function () {
-            debugger;
             const rows = document.querySelectorAll(".table-div-body .div-table-row");
             const updatedData = [];
 
@@ -154,10 +158,23 @@
             const fileName = '@Model.Filename';
             const fileid = '@Model.Id'
             const ogFileName = '@Model.OriginalFilename'
-            // const filepath = filepath1.replace(/\\/g,'\\\\');
-            // Call SendData with the updated data
             SendData(fileid,fileName,updatedData,ogFileName);
+            document.getElementById("saveChanges").classList.add("editable");
+            document.getElementById("editBtn").classList.remove("editable");
+            const editDivs = document.querySelectorAll('#editDiv');
+            editDivs.forEach((div) => {
+              div.setAttribute('contenteditable', 'false');
+            });
         });
+
+        function hideEditBtn(){
+            const editDivs = document.querySelectorAll('#editDiv');
+            editDivs.forEach((div) => {
+              div.setAttribute('contenteditable', 'true');
+            });
+            document.getElementById("editBtn").classList.add("editable");
+            document.getElementById("saveChanges").classList.remove("editable");
+        }
 
     function SendData(fileid,fileName,updatedData,ogFileName) {
         $.ajax({
@@ -186,16 +203,6 @@
         });
     }
 
-            // Send to the server via AJAX
-    //     fetch('@Url.Action("SaveUpdatedExcel", "FileUpload")', {
-    //         method: "POST",
-    //         headers: { "Content-Type": "application/json" },
-    //         body: JSON.stringify({filePath:"@Model.Data",updatedData:updatedData }),
-    //     })
-    //         .then((response) => response.json())
-    //         .then((result) => alert("Changes saved successfully!"))
-    //         .catch((error) => console.error("Error:", error));
-    // });
 
 
 </script>

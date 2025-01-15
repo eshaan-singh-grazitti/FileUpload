@@ -120,7 +120,7 @@
                         <div class="div-table-row">
                             @foreach (var cell in row.Values)
                             {
-                                <div class="div-table-data" style="padding: 8px;" contenteditable="true">@cell</div>
+                                <div class="div-table-data" id="editDiv" style="padding: 8px;" contenteditable="false">@cell</div>
                             }
                         </div>
                     }
