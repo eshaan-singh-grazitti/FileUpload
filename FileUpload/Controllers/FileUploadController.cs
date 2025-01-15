@@ -334,7 +334,6 @@ namespace FileUpload.Controllers
 
         [HttpPost]
         public async Task<IActionResult> SaveUpdatedExcel([FromBody] DataRequest data)
-
         {
             try
             {
@@ -342,6 +341,7 @@ namespace FileUpload.Controllers
                 string ogFileName = data.OgFileName;
                 List<List<string>> updatedData = data.UpdatedData;
                 int fileid = data.Fileid;
+
                 // Reconstruct the full file path
                 string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
 
@@ -350,6 +350,9 @@ namespace FileUpload.Controllers
                 {
                     return BadRequest("File not found.");
                 }
+
+                // Initialize a flag to track changes
+                bool changesDetected = false;
 
                 // Determine file extension
                 var fileExt = Path.GetExtension(filePath).ToLower();
@@ -376,6 +379,7 @@ namespace FileUpload.Controllers
                             var newValue = updatedData[row][col].ToString();
                             if (cellValue != newValue)
                             {
+                                changesDetected = true; // Set the flag if a change is detected
                                 var change = new ExcelChanges
                                 {
                                     UserID = User.FindFirstValue(ClaimTypes.NameIdentifier),
@@ -395,9 +399,11 @@ namespace FileUpload.Controllers
                             }
                         }
                     }
-                    await _context.SaveChangesAsync();
-                    // Save changes
-                    package.Save();
+                    if (changesDetected)
+                    {
+                        await _context.SaveChangesAsync();
+                        package.Save();
+                    }
                 }
                 else if (fileExt == ".xls")
                 {
@@ -418,6 +424,7 @@ namespace FileUpload.Controllers
 
                                 if (cellValue != newValue)
                                 {
+                                    changesDetected = true; // Set the flag if a change is detected
                                     var change = new ExcelChanges
                                     {
                                         UserID = User.FindFirstValue(ClaimTypes.NameIdentifier),
@@ -431,23 +438,31 @@ namespace FileUpload.Controllers
                                         ChangeDate = DateTime.Now
                                     };
 
-
                                     await _context.ExcelChanges.AddAsync(change);
                                     cell.SetCellValue(updatedData[row][col]);
                                 }
                             }
                         }
-                        await _context.SaveChangesAsync();
-                        // Save changes to the file
-                        using (var outputFile = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                        if (changesDetected)
                         {
-                            workbook.Write(outputFile);
+                            await _context.SaveChangesAsync();
+                            // Save changes to the file
+                            using (var outputFile = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                            {
+                                workbook.Write(outputFile);
+                            }
                         }
                     }
                 }
                 else
                 {
                     return BadRequest("Unsupported file format.");
+                }
+
+                // Check if changes were detected
+                if (!changesDetected)
+                {
+                    return Json(new { success = true, message = "No changes detected in the Excel file." });
                 }
 
                 return Json(new { success = true, message = "Excel file updated successfully." });

@@ -167,6 +167,7 @@
             const editDivs = document.querySelectorAll('#editDiv');
             editDivs.forEach((div) => {
               div.setAttribute('contenteditable', 'false');
+              div.style.border = "2px solid black";
             });
         });
 
@@ -174,6 +175,7 @@
             const editDivs = document.querySelectorAll('#editDiv');
             editDivs.forEach((div) => {
               div.setAttribute('contenteditable', 'true');
+              div.style.border = "1px dashed black";
             });
             document.getElementById("editBtn").classList.add("editable");
             document.getElementById("saveChanges").classList.remove("editable");
