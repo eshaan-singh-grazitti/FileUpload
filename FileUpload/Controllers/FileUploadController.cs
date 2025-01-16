@@ -5,6 +5,7 @@ using FileUpload.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NPOI.HPSF;
 using NPOI.HSSF.UserModel;
 using OfficeOpenXml;
 using System.Drawing;
@@ -28,6 +29,11 @@ namespace FileUpload.Controllers
 
         public async Task<IActionResult> Index()
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             TempData["message"] = ViewBag.Message;
             var files = await _context.FileUploadModal.ToListAsync();
             return View(files);
@@ -35,6 +41,11 @@ namespace FileUpload.Controllers
         [HttpGet]
         public async Task<IActionResult> DataGrid()
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get logged-in user ID
 
             var user = await _userManager.FindByIdAsync(userId);
@@ -75,7 +86,7 @@ namespace FileUpload.Controllers
                 {
                     string fileExt = Path.GetExtension(file.FileName).ToLower();
 
-                    if (!Array.Exists(ext, e => e == fileExt))
+                    if (!System.Array.Exists(ext, e => e == fileExt))
                     {
                         ViewBag.Message = $"*Invalid file extension: {fileExt}. Allowed types are {string.Join(", ", ext)}.";
                         return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
@@ -84,6 +95,8 @@ namespace FileUpload.Controllers
                     string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
                     string fileName = $"{originalFileName}_{timestamp}{fileExt}";
+                    string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
+                    
 
                     // Temporary storage for chunks
                     string tempDir = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\TempChunks");
@@ -102,7 +115,7 @@ namespace FileUpload.Controllers
                     // If all chunks are uploaded, merge them in parallel
                     if (chunkIndex + 1 == totalChunks)
                     {
-                        string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
+                       
                         string compressedFilePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\CompressedUploads", fileName);
 
                         // Create a list of tasks for merging chunks in parallel
@@ -131,7 +144,24 @@ namespace FileUpload.Controllers
 
                         // Save to global path
                         System.IO.File.Copy(finalPath, globalPath, true);
+                        if (fileExt == ".xls")
+                        {
+                            using (FileStream fileDemo = new FileStream(finalPath, FileMode.Open, FileAccess.Read))
+                            {
+                                var workbook = new HSSFWorkbook(fileDemo);  // Use HSSFWorkbook for .xls filesx
+                                var sheet = workbook.GetSheetAt(0);  // First sheet in the workbook
 
+                                var headers = new List<string>();
+                                var headerRow = sheet.GetRow(0);  // Read the first row as headers
+                                if (headerRow == null)
+                                {
+                                    System.IO.File.Delete(finalPath);
+                                    ViewBag.Message = "*Excel file is empty.";
+                                    return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                                }
+
+                            }
+                        }
                         // Compress the file for thumbnails (no change in logic)
                         if (fileExt != ".xls" && fileExt != ".xlsx")
                         {
@@ -498,7 +528,8 @@ namespace FileUpload.Controllers
                     column = new List<int>(),
                     ExcelChangesData = new List<ExcelChanges>(),
                     isDeleted = file.IsDeleted,
-                    DeletedBy = file.DeletedBy
+                    DeletedBy = file.DeletedBy,
+                    deteleTime =file.DeleteTime
                 };
 
 
@@ -514,6 +545,11 @@ namespace FileUpload.Controllers
         }
         public async Task<IActionResult> Details(int id)
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             var file = await _context.FileUploadModal.FindAsync(id);
             if (file == null)
             {
@@ -548,8 +584,8 @@ namespace FileUpload.Controllers
             {
                 return NotFound();
             }
-
-            string finalPath = file.Data;
+            string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
+            //string finalPath = file.Data;
             var fileBytes = await System.IO.File.ReadAllBytesAsync(finalPath);
 
             return File(fileBytes, file.FileType, file.OriginalFilename);
@@ -565,30 +601,6 @@ namespace FileUpload.Controllers
             
             if (file != null)
             {
-                //string fileExt = file.Extention;
-                //string filePath = file.Data;
-                //string UploadFolder = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
-                //if (fileExt == ".xls" || fileExt == ".xlsx")
-                //{
-                //    if (System.IO.File.Exists(filePath) && System.IO.File.Exists(filePath))
-                //    {
-                //        System.IO.File.Delete(filePath);
-                //        System.IO.File.Delete(UploadFolder);
-                //    }
-                //}
-                //else
-                //{
-                //    string CompressedfilePath = file.CompressedPath;
-
-                //    if (System.IO.File.Exists(filePath) && System.IO.File.Exists(CompressedfilePath) && System.IO.File.Exists(UploadFolder))
-                //    {
-                //        System.IO.File.Delete(filePath);
-                //        System.IO.File.Delete(CompressedfilePath);
-                //        System.IO.File.Delete(UploadFolder);
-                //    }
-                //}
-                //_context.FileUploadModal.Remove(file);
-
                 file.IsDeleted = true;
                 if (user.UserName == "admin@abc.com")
                 {
@@ -598,6 +610,7 @@ namespace FileUpload.Controllers
                 {
                     file.DeletedBy = user.UserName;
                 }
+                file.DeleteTime = DateTime.Now;
                 
 
                 await _context.SaveChangesAsync();

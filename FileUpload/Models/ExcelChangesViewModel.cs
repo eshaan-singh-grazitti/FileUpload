@@ -8,6 +8,7 @@
         public List<ExcelChanges> ExcelChangesData { get; set; } 
         public bool isDeleted { get; set; }
         public string? DeletedBy { get; set; }
+        public DateTime? deteleTime { get; set; }
     }
 
 }

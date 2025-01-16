@@ -34,6 +34,7 @@ namespace FileUpload.Models
         public string UserId { get; set; }
         public bool IsDeleted { get; set; }
         public string? DeletedBy { get; set; }
+        public DateTime? DeleteTime { get; set; }
         // Navigation property for related ExcelChanges
         public ICollection<ExcelChanges> ExcelChanges { get; set; } = new List<ExcelChanges>();
     }

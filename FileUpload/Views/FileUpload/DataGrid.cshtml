@@ -121,12 +121,13 @@ else
                         <th>Uploaded By</th>
                         <th>Status</th>
                         <th>Deleted by</th>
-                        <th style="min-width:14rem;">Actions</th>
+                        <th>Detele Time</th>
+                        <th style="min-width:12rem;">Actions</th>
 
                     }
                     else
                     {
-                        <th style="min-width:14rem;">Actions</th>
+                        <th style="min-width:12rem;">Actions</th>
 
                     }
 
@@ -174,14 +175,15 @@ else
                                 <td>
                                     <strong> @(file.DeletedBy ?? "") </strong>
                                 </td>
+                                <td>@file.DeleteTime</td>
                                 <td>
                                     <div class="buttons">
-                                        <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon" style="padding: 0.5rem 1.5rem;"
+                                        <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon" 
                                            data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
                                             <i class="bi bi-info-circle"></i>
                                         </a>
 
-                                        <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon" style="padding: 0.5rem 1.5rem;"
+                                        <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon" 
                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
                                             <i class="bi bi-download"></i>
                                         </a>
@@ -192,19 +194,20 @@ else
                             {
                                 <td class="text-success"><strong>Active</strong></td>
                                 <td></td>
+                                <td></td>
                                 <td>
                                     <div class="buttons">
-                                        <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon" style="padding: 0.5rem 1rem;"
+                                        <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon" 
                                            data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
                                             <i class="bi bi-info-circle"></i>
                                         </a>
 
-                                        <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon" style="padding: 0.5rem 1rem;"
+                                        <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon" 
                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
                                             <i class="bi bi-download"></i>
                                         </a>
 
-                                        <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')" style="padding: 0.5rem 1rem;"
+                                        <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')" 
                                            class="btn btn-danger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </a>

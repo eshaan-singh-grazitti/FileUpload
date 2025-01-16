@@ -11,6 +11,7 @@
                 <th>Old Value</th>
                 <th>New Value</th>
                 <th>Change Date</th>
+
             </tr>
         </thead>
         <tbody>
@@ -28,11 +29,22 @@
                         <td>@change.ChangeDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     </tr>
                 }
+                if (Model.isDeleted)
+                {
+                    <tr>
+                        <td colspan="7" class="alert-danger alert">
+                            <strong >
+                                File Deleted on @Model.deteleTime
+
+                            </strong>
+                        </td>
+                    </tr>
+                }
             }
             else
             {
                 <tr>
-                    <td colspan="10" class="text-center text-muted">No changes available</td>
+                    <td colspan="7" class="text-center text-muted">No changes available</td>
                 </tr>
             }
         </tbody>

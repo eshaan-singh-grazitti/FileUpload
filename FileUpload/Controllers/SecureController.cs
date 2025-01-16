@@ -20,6 +20,11 @@ namespace FileUpload.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdminDashboard()
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             //var data = await _context.ExcelChanges.ToListAsync();
             var data = await _context.ExcelChanges
                 .GroupBy(f => new { f.FileName, f.UserName }) // Group by FileName and UserName
@@ -30,18 +35,13 @@ namespace FileUpload.Controllers
         [Authorize(Roles = "User,Admin")]
         public IActionResult UserDashboard()
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             return View();
         }
-        //public IActionResult Changes(int id)
-        //{
-        //    var file  = _context.FileUploadModal.Find(id);
-        //    var filename = file.Filename;
-        //    string fileExt = Path.GetExtension(filename).ToLower();
-        //    string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", filename);
-        //    DTO.ExcelData = FileUploadController.PreviewExcel(filePath,fileExt);
-        //    DTO.row = 
-        //    DTO.column = 
-        //    return View(DTO);
-        //}
+
     }
 }

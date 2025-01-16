@@ -26,7 +26,12 @@ namespace FileUpload.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+            if (existingUser != null)
+            {
+                ModelState.AddModelError("Email", "Email already Exist");
+                return View(model);
+            }
             var user = new IdentityUser { UserName = model.UserName, Email = model.Email };
             var result = await _userManager.CreateAsync(user, model.Password);
 
@@ -37,7 +42,10 @@ namespace FileUpload.Controllers
                 await _userManager.AddToRoleAsync(user, "User");
                 return RedirectToAction("Login", "Account");
             }
-
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
             return View(model);
         }
         [HttpGet]
@@ -85,6 +93,7 @@ namespace FileUpload.Controllers
         public async Task<IActionResult> Logout(string returnUrl = null)
         {
             await _signInManager.SignOutAsync();
+    
             return RedirectToAction("Index", "Home");  // Or redirect to any other page
         }
         [HttpGet]

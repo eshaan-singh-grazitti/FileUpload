@@ -22,7 +22,7 @@
 
         .radio-input label {
             width: 100%;
-            padding: 10px;
+            padding: 13px;
             cursor: pointer;
             display: flex;
             justify-content: center;
@@ -31,6 +31,7 @@
             font-weight: 600;
             letter-spacing: -1px;
             font-size: 14px;
+            transition: color 0.3s ease, background-color 0.3s ease;
         }
 
     .selection {
@@ -44,33 +45,57 @@
         transition: 0.15s ease;
     }
 
-    .radio-input label:nth-child(1):has(input:checked) {
+    /* When the radio input is checked */
+    .radio-input input:checked + label:nth-child(1) {
+        color: #fff;
+        background-color: rgb(255, 4, 4); /* Red color for the first label */
+    }
+
+    .radio-input input:checked + label:nth-child(2) {
+        color: #fff;
+        background-color: rgb(0, 172, 29); /* Green color for the second label */
+    }
+
+    /* When the radio input is checked, the selection will move */
+    .radio-input input:checked + label:nth-child(1) ~ .selection {
+        background-color: rgb(255, 4, 4);
+        display: inline-block;
+        transform: translateX(0);
+    }
+
+    .radio-input input:checked + label:nth-child(2) ~ .selection {
+        background-color: rgb(0, 172, 29);
+        display: inline-block;
+        transform: translateX(calc(var(--container_width) / 2));
+    }
+
+    /* When the radio input is disabled, prevent interaction */
+    .radio-input input:disabled + label {
+        cursor: not-allowed;
+        opacity: 0.6; /* Dimmed label when input is disabled */
+    }
+
+    /* When the radio input is checked and disabled, retain the background color */
+    .radio-input input:disabled:checked + label:nth-child(1) {
+        background-color: rgba(255, 4, 4, 0.6); /* Lightened red when disabled and checked */
         color: #fff;
     }
 
-    .radio-input label:nth-child(2):has(input:checked) {
-        color: #ffffff;
+    .radio-input input:disabled:checked + label:nth-child(2) {
+        background-color: rgba(0, 172, 29, 0.6); /* Lightened green when disabled and checked */
+        color: #fff;
     }
 
-    .radio-input label:nth-child(1):has(input:checked) ~ .selection {
-        background-color: rgb(255, 4, 4);
+    /* Ensure the selection is visible and remains after disabling */
+    .radio-input input:disabled:checked + label:nth-child(1) ~ .selection {
+        background-color: rgba(255, 4, 4, 0.6);
         display: inline-block;
     }
 
-    .radio-input label:nth-child(2):has(input:checked) ~ .selection {
-        background-color: rgb(0, 172, 29);
+    .radio-input input:disabled:checked + label:nth-child(2) ~ .selection {
+        background-color: rgba(0, 172, 29, 0.6);
         display: inline-block;
     }
-
-    .radio-input label:nth-child(1):has(input:checked) ~ .selection {
-        transform: translateX(calc(var(--container_width) * 0 / 2));
-    }
-
-    .radio-input label:nth-child(2):has(input:checked) ~ .selection {
-        transform: translateX(calc(var(--container_width) * 1 / 2));
-    }
-
-
 
 </style>
 
@@ -97,11 +122,11 @@
 
                                 <div class="radio-input">
                                     <label>
-                                        <input onclick="sortExcel('@column','asc')" type="radio" id="value-1" name="value-radio" value="1" />
+                                        <input onclick="sortExcel(this,'@column','asc')" type="radio" id="value-1" name="value-radio" value="1" />
                                         <span>▲</span>
                                     </label>
                                     <label>
-                                        <input onclick="sortExcel('@column','desc')" type="radio" id="value-2" name="value-radio" value="2" />
+                                        <input onclick="sortExcel(this,'@column','desc')" type="radio" id="value-2" name="value-radio" value="2" />
                                         <span>▼</span>
                                     </label>
                                     <span class="selection"></span>

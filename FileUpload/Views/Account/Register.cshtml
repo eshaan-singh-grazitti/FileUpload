@@ -160,6 +160,9 @@
             </div>
         </div>
         <span asp-validation-for="Password" class="text-danger"></span>
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        
+
 
         <button type="submit" class="btn btn-primary submit">Register</button>
         <p class="signup-link">

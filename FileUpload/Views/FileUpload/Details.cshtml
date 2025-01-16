@@ -63,8 +63,9 @@
     .editable {
         display: none;
     }
-    .btna{
-        width:10rem;
+
+    .btna {
+        width: 10rem;
     }
 </style>
 
@@ -83,8 +84,11 @@
             </div>
             <div id="excelPreviewContainer">
             </div>
+
+
             <button class="btn btn-warning btna" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
             <button id="saveChanges" class="btn btn-primary editable btna">Save Changes</button>
+
 
 
         }
@@ -128,7 +132,15 @@
         sortExcel(param1, param2);
     }
 
-    function sortExcel(column, direction) {
+
+
+    let lastClicked = { column: null, direction: null };
+
+        function sortExcel(button, column, direction) {
+        lastClicked = { column, direction };
+        // Disable the clicked button
+        button.disabled = true;
+
         $.ajax({
             url: '@Url.Action("LoadExcelPreview", "FileUpload")',
             type: 'POST',
@@ -140,12 +152,44 @@
             success: function (result) {
                 console.log(result);
                 $("#excelPreviewContainer").html(result);
+
+                // Re-enable the button after AJAX success
+                reapplyButtonState();
             },
             error: function (xhr) {
                 alert("Error: " + xhr.responseText);
+
+                // Re-enable the button if there is an error
+                button.disabled = false;
             }
         });
     }
+
+        function reapplyButtonState() {
+        if (lastClicked.column && lastClicked.direction) {
+            const buttons = document.querySelectorAll(`input[type="radio"][onclick*="'${lastClicked.column}','${lastClicked.direction}'"]`);
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                // Find the corresponding label and change its background color and text color
+                const label = btn.closest('label');
+                if (label) {
+                    // Apply styles to indicate that the button is selected and disabled
+                    if (btn.value == 1) {
+                        label.style.backgroundColor = 'rgb(255, 4, 4)';
+                        label.style.color = '#fff'; // For red
+                        label.style.padding = '13px'
+                        label.style.cursor = 'not-allowed'
+                    } else if (btn.value == 2) {
+                        label.style.backgroundColor = 'rgb(0, 172, 29)';
+                        label.style.color = '#fff'; // For green
+                        label.style.padding = '13px'
+                        label.style.cursor = 'not-allowed'
+                    }
+                }
+            });
+        }
+    }
+
 
         document.getElementById("saveChanges").addEventListener("click", function () {
             const rows = document.querySelectorAll(".table-div-body .div-table-row");
