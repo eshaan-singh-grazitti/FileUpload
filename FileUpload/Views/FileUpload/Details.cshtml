@@ -79,15 +79,20 @@
         <h4>Preview:</h4>
         @if (Model.Extention == ".xls" || Model.Extention == ".xlsx")
         {
+
             <div class="preview-div">
                 <button class="btn btn-primary" onclick="RefreshTable()">Refresh Table</button>
             </div>
+
             <div id="excelPreviewContainer">
             </div>
 
+            if (!Model.IsDeleted)
+            {
 
-            <button class="btn btn-warning btna" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
-            <button id="saveChanges" class="btn btn-primary editable btna">Save Changes</button>
+                <button class="btn btn-warning btna" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
+                <button id="saveChanges" class="btn btn-primary editable btna">Save Changes</button>
+            }
 
 
 
@@ -177,12 +182,12 @@
                     if (btn.value == 1) {
                         label.style.backgroundColor = 'rgb(255, 4, 4)';
                         label.style.color = '#fff'; // For red
-                        label.style.padding = '13px'
+                        // label.style.padding = '13px'
                         label.style.cursor = 'not-allowed'
                     } else if (btn.value == 2) {
                         label.style.backgroundColor = 'rgb(0, 172, 29)';
                         label.style.color = '#fff'; // For green
-                        label.style.padding = '13px'
+                        // label.style.padding = '13px'
                         label.style.cursor = 'not-allowed'
                     }
                 }

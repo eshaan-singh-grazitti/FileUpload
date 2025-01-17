@@ -3,99 +3,71 @@
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 <style>
+
+    .div-table-data {
+        min-width: 11rem;
+    }
+
     .radio-input input {
         display: none;
     }
 
+    .div-table-data {
+        width: 9rem;
+    }
+
     .radio-input {
-        --container_width: 75px;
-        position: relative;
         display: flex;
-        align-items: center;
-        border-radius: 10px;
-        background-color: #ffffff;
-        color: #000000;
-        width: var(--container_width);
-        overflow: hidden;
-        border: 2px solid #000000;
+        flex-direction: column;
+        width: 2rem;
     }
 
         .radio-input label {
-            width: 100%;
-            padding: 13px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1;
-            font-weight: 600;
-            letter-spacing: -1px;
-            font-size: 14px;
-            transition: color 0.3s ease, background-color 0.3s ease;
+            text-align: center;
         }
 
-    .selection {
-        display: none;
-        position: absolute;
-        height: 100%;
-        width: calc(var(--container_width) / 2);
-        z-index: 0;
-        left: 0;
-        top: 0;
-        transition: 0.15s ease;
-    }
 
-    /* When the radio input is checked */
-    .radio-input input:checked + label:nth-child(1) {
-        color: #fff;
-        background-color: rgb(255, 4, 4); /* Red color for the first label */
-    }
 
-    .radio-input input:checked + label:nth-child(2) {
-        color: #fff;
-        background-color: rgb(0, 172, 29); /* Green color for the second label */
-    }
+        /* When the radio input is checked */
+        .radio-input input:checked + label:nth-child(1) {
+            color: #fff;
+            background-color: rgb(255, 4, 4); /* Red color for the first label */
+        }
 
-    /* When the radio input is checked, the selection will move */
-    .radio-input input:checked + label:nth-child(1) ~ .selection {
-        background-color: rgb(255, 4, 4);
-        display: inline-block;
-        transform: translateX(0);
-    }
+        .radio-input input:checked + label:nth-child(2) {
+            color: #fff;
+            background-color: rgb(0, 172, 29); /* Green color for the second label */
+        }
 
-    .radio-input input:checked + label:nth-child(2) ~ .selection {
-        background-color: rgb(0, 172, 29);
-        display: inline-block;
-        transform: translateX(calc(var(--container_width) / 2));
-    }
 
-    /* When the radio input is disabled, prevent interaction */
-    .radio-input input:disabled + label {
-        cursor: not-allowed;
-        opacity: 0.6; /* Dimmed label when input is disabled */
-    }
 
-    /* When the radio input is checked and disabled, retain the background color */
-    .radio-input input:disabled:checked + label:nth-child(1) {
-        background-color: rgba(255, 4, 4, 0.6); /* Lightened red when disabled and checked */
-        color: #fff;
-    }
+        /* When the radio input is disabled, prevent interaction */
+        .radio-input input:disabled + label {
+            cursor: not-allowed;
+            opacity: 0.6; /* Dimmed label when input is disabled */
+        }
 
-    .radio-input input:disabled:checked + label:nth-child(2) {
-        background-color: rgba(0, 172, 29, 0.6); /* Lightened green when disabled and checked */
-        color: #fff;
-    }
+        /* When the radio input is checked and disabled, retain the background color */
+        .radio-input input:disabled:checked + label:nth-child(1) {
+            background-color: rgba(255, 4, 4, 0.6); /* Lightened red when disabled and checked */
+            color: #fff;
+        }
 
-    /* Ensure the selection is visible and remains after disabling */
-    .radio-input input:disabled:checked + label:nth-child(1) ~ .selection {
-        background-color: rgba(255, 4, 4, 0.6);
-        display: inline-block;
-    }
+        .radio-input input:disabled:checked + label:nth-child(2) {
+            background-color: rgba(0, 172, 29, 0.6); /* Lightened green when disabled and checked */
+            color: #fff;
+        }
 
-    .radio-input input:disabled:checked + label:nth-child(2) ~ .selection {
-        background-color: rgba(0, 172, 29, 0.6);
-        display: inline-block;
-    }
+        /* Ensure the selection is visible and remains after disabling */
+        .radio-input input:disabled:checked + label:nth-child(1) ~ .selection {
+            background-color: rgba(255, 4, 4, 0.6);
+            display: inline-block;
+        }
+
+        .radio-input input:disabled:checked + label:nth-child(2) ~ .selection {
+            background-color: rgba(0, 172, 29, 0.6);
+            display: inline-block;
+        }
 
 </style>
 
@@ -115,8 +87,8 @@
                     {
                         foreach (var column in Model.ExcelValue[0].Keys)
                         {
-                            <div class="div-table-data table-dark" style="padding: 5px; text-align: left;">
-                                <div>
+                            <div class="div-table-data div-head table-dark" style="padding: 5px; text-align: left;">
+                                <div class="data-div">
                                     @column
                                 </div>
 
@@ -129,7 +101,7 @@
                                         <input onclick="sortExcel(this,'@column','desc')" type="radio" id="value-2" name="value-radio" value="2" />
                                         <span>▼</span>
                                     </label>
-                                    <span class="selection"></span>
+
                                 </div>
 
                             </div>
