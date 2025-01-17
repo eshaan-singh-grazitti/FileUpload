@@ -611,7 +611,10 @@ namespace FileUpload.Controllers
                     file.DeletedBy = user.UserName;
                 }
                 file.DeleteTime = DateTime.Now;
-                
+
+                var data = await _context.ExcelChanges.FirstOrDefaultAsync(f => f.FileId == id);
+
+                data.isDeleted = true;
 
                 await _context.SaveChangesAsync();
 

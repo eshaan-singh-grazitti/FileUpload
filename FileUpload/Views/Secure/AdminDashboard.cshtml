@@ -14,6 +14,7 @@
             <th>User Name</th>
             <th>File Name</th>
             <th>Change Date</th>
+            <th>Deleted</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -25,6 +26,14 @@
                 <td>@change.UserName</td>
                 <td>@change.FileName</td>
                 <td>@change.ChangeDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                @if(change.isDeleted)
+                {
+                    <td class="text-danger"><strong>Deleted</strong></td>
+                }
+                else
+                {
+                    <td class="text-success"><strong>Active</strong></td>
+                }
                 <td>
                     <a asp-action="Changes" asp-controller="FileUpload" asp-route-id="@change.FileId" class="btn btn-info">View Changes</a>
                 </td>
