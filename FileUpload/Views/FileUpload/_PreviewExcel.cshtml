@@ -4,7 +4,7 @@
 *@
 <style>
 
-    .div-table-data{
+    .div-table-data {
         width: 11rem;
     }
 
@@ -132,4 +132,10 @@
         </div>
     </div>
 }
+@if (@Model.ErrorMsg != null)
+{
 
+    <div class="alert alert-danger">
+        @Model.ErrorMsg
+    </div>
+}

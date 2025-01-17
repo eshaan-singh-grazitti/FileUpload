@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NPOI.HPSF;
+using NPOI.HSSF.Record.Chart;
 using NPOI.HSSF.UserModel;
 using OfficeOpenXml;
 using System.Drawing;
@@ -96,7 +97,7 @@ namespace FileUpload.Controllers
                     string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
                     string fileName = $"{originalFileName}_{timestamp}{fileExt}";
                     string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
-                    
+
 
                     // Temporary storage for chunks
                     string tempDir = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\TempChunks");
@@ -115,7 +116,7 @@ namespace FileUpload.Controllers
                     // If all chunks are uploaded, merge them in parallel
                     if (chunkIndex + 1 == totalChunks)
                     {
-                       
+
                         string compressedFilePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\CompressedUploads", fileName);
 
                         // Create a list of tasks for merging chunks in parallel
@@ -328,32 +329,56 @@ namespace FileUpload.Controllers
             // Apply sorting if requested
             if (!string.IsNullOrEmpty(sortColumn) && !string.IsNullOrEmpty(sortDirection))
             {
-                if (sortDirection.ToLower() == "asc")
+                try
                 {
-                    excelData = excelData.OrderBy(row =>
+                    if (sortDirection.ToLower() == "asc")
                     {
+                        excelData = excelData.OrderBy(row =>
+                        {
+                            var value = row[sortColumn];
+                            // Handle values with symbols like "$" or non-numeric characters
+                            var cleanedValue = CleanNumericValue(value);
+                            return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
+                        }).ToList();
                         DTO.DirectionValue = "Ascending";
-                        var value = row[sortColumn];
-                        // Try to parse the value as a number
-                        return decimal.TryParse(value, out var numericValue) ? (object)numericValue : value;
-                    }).ToList();
-                }
-                else if (sortDirection.ToLower() == "desc")
-                {
-                    excelData = excelData.OrderByDescending(row =>
+                    }
+                    else if (sortDirection.ToLower() == "desc")
                     {
+                        excelData = excelData.OrderByDescending(row =>
+                        {
+                            var value = row[sortColumn];
+                            // Handle values with symbols like "$" or non-numeric characters
+                            var cleanedValue = CleanNumericValue(value);
+                            return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
+                        }).ToList();
                         DTO.DirectionValue = "Descending";
-                        var value = row[sortColumn];
-                        // Try to parse the value as a number
-                        return decimal.TryParse(value, out var numericValue) ? (object)numericValue : value;
-                    }).ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    DTO.ErrorMsg = ex.Message + Environment.NewLine + "Enter the same type of values in a particular column.";
                 }
             }
+
             DTO.SortedColumnName = sortColumn;
             DTO.ExcelValue = excelData;
 
             // Return the partial view with sorted data
             return PartialView("_PreviewExcel", DTO);
+        }
+
+        /// <summary>
+        /// Cleans the numeric value by removing symbols like "$" or other non-numeric characters.
+        /// </summary>
+        /// <param name="value">The string value to clean.</param>
+        /// <returns>The cleaned numeric value as a string.</returns>
+        private string CleanNumericValue(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return value;
+
+            // Remove non-numeric characters except for the decimal point
+            return new string(value.Where(c => char.IsDigit(c) || c == '.' || c == '-').ToArray());
         }
 
         [HttpGet]
@@ -407,8 +432,28 @@ namespace FileUpload.Controllers
                         {
                             var cellValue = worksheet.Cells[row + 2, col + 1].Text;
                             var newValue = updatedData[row][col].ToString();
+                            string sanitizedValue = newValue.Replace("$", "").Replace(",", "");
+
+                            if (decimal.TryParse(sanitizedValue, out decimal parsedValue))
+                            {
+                                // Check if the value has more than two decimal places
+                                if (parsedValue != Math.Round(parsedValue, 2))
+                                {
+                                    // Round the value to two decimal places
+                                    newValue = "$" + Math.Round(parsedValue, 2).ToString("F2");
+                                }
+                            }
+
+
+                            // Check if the value length exceeds 30 characters
+                            if (newValue.Length > 30)
+                            {
+                                // Truncate the value to 30 characters
+                                newValue = newValue.Substring(0, 30);
+                            }
                             if (cellValue != newValue)
                             {
+
                                 changesDetected = true; // Set the flag if a change is detected
                                 var change = new ExcelChanges
                                 {
@@ -424,7 +469,7 @@ namespace FileUpload.Controllers
                                 };
 
                                 await _context.ExcelChanges.AddAsync(change);
-
+                                updatedData[row][col] = newValue;
                                 worksheet.Cells[row + 2, col + 1].Value = updatedData[row][col]; // Data starts from row 2
                             }
                         }
@@ -451,9 +496,29 @@ namespace FileUpload.Controllers
                                 var cell = dataRow.GetCell(col) ?? dataRow.CreateCell(col);
                                 var cellValue = cell.ToString();
                                 var newValue = updatedData[row][col].ToString();
+                                string sanitizedValue = newValue.Replace("$", "").Replace(",", "");
+
+                                if (decimal.TryParse(sanitizedValue, out decimal parsedValue))
+                                {
+                                    // Check if the value has more than two decimal places
+                                    if (parsedValue != Math.Round(parsedValue, 2))
+                                    {
+                                        // Round the value to two decimal places
+                                        newValue = "$" + Math.Round(parsedValue, 2).ToString("F2");
+                                    }
+                                }
+                            
+
+                                // Check if the value length exceeds 30 characters
+                                if (newValue.Length > 30)
+                                {
+                                    // Truncate the value to 30 characters
+                                    newValue = newValue.Substring(0, 30);
+                                }
 
                                 if (cellValue != newValue)
                                 {
+
                                     changesDetected = true; // Set the flag if a change is detected
                                     var change = new ExcelChanges
                                     {
@@ -467,7 +532,7 @@ namespace FileUpload.Controllers
                                         NewValue = newValue,
                                         ChangeDate = DateTime.Now
                                     };
-
+                                    updatedData[row][col] = newValue;
                                     await _context.ExcelChanges.AddAsync(change);
                                     cell.SetCellValue(updatedData[row][col]);
                                 }
@@ -477,7 +542,7 @@ namespace FileUpload.Controllers
                         {
                             await _context.SaveChangesAsync();
                             // Save changes to the file
-                            using (var outputFile = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                            using (var outputFile = new FileStream(filePath, FileMode.Open, FileAccess.Write))
                             {
                                 workbook.Write(outputFile);
                             }
@@ -529,7 +594,7 @@ namespace FileUpload.Controllers
                     ExcelChangesData = new List<ExcelChanges>(),
                     isDeleted = file.IsDeleted,
                     DeletedBy = file.DeletedBy,
-                    deteleTime =file.DeleteTime
+                    deteleTime = file.DeleteTime
                 };
 
 
@@ -594,11 +659,11 @@ namespace FileUpload.Controllers
         public async Task<IActionResult> Delete(int id)
         {
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _userManager.FindByIdAsync(userId);
 
             var file = await _context.FileUploadModal.FindAsync(id);
-            
+
             if (file != null)
             {
                 file.IsDeleted = true;
@@ -626,7 +691,7 @@ namespace FileUpload.Controllers
                 var userFiles = await _context.FileUploadModal
                     .Where(f => f.UserId == userId)
                     .Where(a => a.IsDeleted == false)
-                    .OrderByDescending(f=>f.UploadedOn)
+                    .OrderByDescending(f => f.UploadedOn)
                     .ToListAsync();
 
                 return View("DataGrid", userFiles);

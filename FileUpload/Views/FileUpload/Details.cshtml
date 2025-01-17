@@ -79,13 +79,18 @@
         <h4>Preview:</h4>
         @if (Model.Extention == ".xls" || Model.Extention == ".xlsx")
         {
-
+            if (ViewBag.ErrorMessage != null)
+            {
+                <p>@ViewBag.ErrorMessage</p>
+                
+            }
             <div class="preview-div">
                 <button class="btn btn-primary" onclick="RefreshTable()">Refresh Table</button>
             </div>
 
             <div id="excelPreviewContainer">
             </div>
+            
 
             if (!Model.IsDeleted)
             {
