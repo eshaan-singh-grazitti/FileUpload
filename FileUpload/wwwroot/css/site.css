@@ -40,29 +40,11 @@ body {
     color: green;
     font-weight: bold;
 }
-.buttons{
-    display:flex;
-    justify-content:space-around;
-}
-.detail-table{
-    max-height:80vh;
-    max-width:80vw;
-    overflow:auto;
-}
+
 .uploadButton{
     cursor:not-allowed;
 }
 
-.div-table-row{
-    display:flex;           
-}
-.div-table-data{
-    max-width:11vw;
-    min-width:11vw;
-    border:1px solid black;
-    display:flex;
-    justify-content:space-between
-}
 .preview-div {
     display: flex;
     margin-bottom: 1rem;

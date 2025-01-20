@@ -420,10 +420,36 @@ namespace FileUpload.Controllers
                     var rowCount = updatedData.Count;
                     var colCount = updatedData.FirstOrDefault()?.Count ?? 0;
 
-                    // Update data in the worksheet
-                    for (int row = 0; row < rowCount; row++)
+                    // Loop through columns and validate the input
+                    for (int col = 0; col < colCount; col++)
                     {
-                        for (int col = 0; col < colCount; col++)
+                        // Check the format of existing values in the column
+                        var columnValues = new List<string>();
+                        for (int row = 0; row < rowCount; row++)
+                        {
+                            var cellValue = worksheet.Cells[row + 2, col + 1].Text; // Excel data starts from row 2
+                            columnValues.Add(cellValue);
+                        }
+
+                        // Check the data format of the column
+                        string columnFormat = GetColumnFormat(columnValues);
+
+                        // Validate user input based on column format
+                        for (int row = 0; row < rowCount; row++)
+                        {
+                            var newValue = updatedData[row][col].ToString();
+                            if (worksheet.Cells[row + 2, col + 1].Text != newValue)
+                            {
+
+                                if (!ValidateInputFormat(newValue, columnFormat))
+                                {
+                                    return BadRequest($"Invalid input format in column {col + 1}, row {row + 1}. Expected format: {columnFormat}");
+                                }
+                            }
+                        }
+
+                        // Update the data in the worksheet if valid
+                        for (int row = 0; row < rowCount; row++)
                         {
                             var cellValue = worksheet.Cells[row + 2, col + 1].Text;
                             var newValue = updatedData[row][col].ToString();
@@ -439,7 +465,6 @@ namespace FileUpload.Controllers
                                 }
                             }
 
-
                             // Check if the value length exceeds 30 characters
                             if (newValue.Length > 30)
                             {
@@ -448,7 +473,6 @@ namespace FileUpload.Controllers
                             }
                             if (cellValue != newValue)
                             {
-
                                 changesDetected = true; // Set the flag if a change is detected
                                 var change = new ExcelChanges
                                 {
@@ -469,6 +493,7 @@ namespace FileUpload.Controllers
                             }
                         }
                     }
+
                     if (changesDetected)
                     {
                         await _context.SaveChangesAsync();
@@ -481,13 +506,42 @@ namespace FileUpload.Controllers
                     {
                         var workbook = new HSSFWorkbook(file);
                         var sheet = workbook.GetSheetAt(0); // First sheet
+                        var rowCount = updatedData.Count;
+                        var colCount = updatedData.FirstOrDefault() != null ? updatedData.First().Count : 0;
 
-                        // Update data in the sheet
-                        for (int row = 0; row < updatedData.Count; row++)
+
+                        // Loop through columns and validate the input
+                        for (int col = 0; col < colCount; col++)
                         {
-                            var dataRow = sheet.GetRow(row + 1) ?? sheet.CreateRow(row + 1); // Data starts from row 1
-                            for (int col = 0; col < updatedData[row].Count; col++)
+                            // Check the format of existing values in the column
+                            var columnValues = new List<string>();
+                            for (int row = 0; row < updatedData.Count; row++)
                             {
+                                var cellValue = sheet.GetRow(row + 1)?.GetCell(col)?.ToString(); // Excel data starts from row 1
+                                columnValues.Add(cellValue ?? string.Empty);
+                            }
+
+                            // Check the data format of the column
+                            string columnFormat = GetColumnFormat(columnValues);
+
+                            // Validate user input based on column format
+                            for (int row = 0; row < updatedData.Count; row++)
+                            {
+                                var newValue = updatedData[row][col].ToString();
+                                if (sheet.GetRow(row + 1)?.GetCell(col)?.ToString() != newValue)
+                                {
+
+                                    if (!ValidateInputFormat(newValue, columnFormat))
+                                    {
+                                        return BadRequest($"Invalid input format in column {col + 1}, row {row + 1}. Expected format: {columnFormat}");
+                                    }
+                                }
+                            }
+
+                            // Update the data in the sheet if valid
+                            for (int row = 0; row < updatedData.Count; row++)
+                            {
+                                var dataRow = sheet.GetRow(row + 1) ?? sheet.CreateRow(row + 1);
                                 var cell = dataRow.GetCell(col) ?? dataRow.CreateCell(col);
                                 var cellValue = cell.ToString();
                                 var newValue = updatedData[row][col].ToString();
@@ -502,7 +556,6 @@ namespace FileUpload.Controllers
                                         newValue = "$" + Math.Round(parsedValue, 2).ToString("F2");
                                     }
                                 }
-                            
 
                                 // Check if the value length exceeds 30 characters
                                 if (newValue.Length > 30)
@@ -513,7 +566,6 @@ namespace FileUpload.Controllers
 
                                 if (cellValue != newValue)
                                 {
-
                                     changesDetected = true; // Set the flag if a change is detected
                                     var change = new ExcelChanges
                                     {
@@ -533,6 +585,7 @@ namespace FileUpload.Controllers
                                 }
                             }
                         }
+
                         if (changesDetected)
                         {
                             await _context.SaveChangesAsync();
@@ -554,12 +607,67 @@ namespace FileUpload.Controllers
                 {
                     return Json(new { success = true, message = "No changes detected in the Excel file." });
                 }
-
-                return Json(new { success = true, message = "Excel file updated successfully." });
+                var result = LoadExcelPreview(fileid, null, null);
+                return Json(new { success = true, message = "Excel file updated successfully.", data = result });
+                //return (result);
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
+
+        // Helper method to determine the format of a column based on existing data
+        private string GetColumnFormat(List<string> columnValues)
+        {
+            bool allNumeric = columnValues.All(value => decimal.TryParse(value.Replace("$", "").Replace(",", ""), out _));
+            bool allStrings = columnValues.All(value => value.All(c => char.IsLetter(c) || c == ' '));
+            bool mixedFormat = columnValues.Any(value => value.StartsWith("$")) || columnValues.Any(value => value.Contains("st") || value.Contains("nd") || value.Contains("rd") || value.Contains("th"));
+
+            if (mixedFormat)
+            {
+                return "mixed";
+            }
+            else if (allNumeric)
+            {
+                return "numeric";
+            }
+            else if (allStrings)
+            {
+                return "string";
+            }
+            else
+            {
+                return "unknown";
+            }
+        }
+
+        // Helper method to validate input based on the detected format
+        private bool ValidateInputFormat(string input, string columnFormat)
+        {
+            if (columnFormat == "numeric")
+            {
+                return decimal.TryParse(input.Replace("$", "").Replace(",", ""), out _);
+            }
+            else if (columnFormat == "string")
+            {
+                return input.All(c => char.IsLetter(c) || c == ' ');
+            }
+            else if (columnFormat == "mixed")
+            {
+                // Check if the value starts with a dollar sign and is followed by a valid number (e.g., "$1", "$100.50")
+                bool isValidCurrency = input.StartsWith("$") && decimal.TryParse(input.Substring(1).Replace(",", ""), out _);
+
+                // Check if the value contains a number followed by a suffix (e.g., "1st", "2nd", "10th")
+                bool isValidMixed = System.Text.RegularExpressions.Regex.IsMatch(input, @"^\d+(st|nd|rd|th)$");
+
+                // Only allow if it's a valid currency or a valid mixed format (like "1st", "2nd")
+                return isValidCurrency || isValidMixed;
+            }
+
+            else
+            {
+                return false;
             }
         }
 

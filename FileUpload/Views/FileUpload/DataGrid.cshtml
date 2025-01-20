@@ -79,6 +79,15 @@
         font-size: 1.25rem; /* Adjust icon size */
     }
 
+    .buttons {
+        display: flex;
+        justify-content: space-around;
+    }
+    .buttons div{
+        width:100%;
+    }
+
+
 </style>
 
 
@@ -173,20 +182,26 @@ else
                             {
                                 <td class="text-danger"><strong>Deleted</strong></td>
                                 <td>
-                                    <strong> @(file.DeletedBy ?? "") </strong>
+                                    <strong> @(file.DeletedBy ?? "none") </strong>
                                 </td>
                                 <td>@file.DeleteTime</td>
                                 <td>
                                     <div class="buttons">
-                                        <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon" 
-                                           data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
-                                            <i class="bi bi-info-circle"></i>
-                                        </a>
+                                        <div>
 
-                                        <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon" 
-                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
-                                            <i class="bi bi-download"></i>
-                                        </a>
+                                            <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
+                                                <i class="bi bi-info-circle"></i>
+                                            </a>
+                                        </div>
+                                        <div>
+
+                                            <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                        <div></div>
                                     </div>
                                 </td>
                             }
@@ -197,20 +212,28 @@ else
                                 <td></td>
                                 <td>
                                     <div class="buttons">
-                                        <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon" 
-                                           data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
-                                            <i class="bi bi-info-circle"></i>
-                                        </a>
+                                        <div>
 
-                                        <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon" 
-                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
-                                            <i class="bi bi-download"></i>
-                                        </a>
+                                            <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
+                                                <i class="bi bi-info-circle"></i>
+                                            </a>
+                                        </div>
+                                        <div>
 
-                                        <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')" 
-                                           class="btn btn-danger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
+                                            <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                        <div>
+
+
+                                            <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')"
+                                               class="btn btn-danger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
 
 
                                     </div>
@@ -221,20 +244,27 @@ else
                         {
                             <td>
                                 <div class="buttons">
-                                    <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon"
-                                       data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
-                                        <i class="bi bi-info-circle"></i>
-                                    </a>
+                                    <div>
 
-                                    <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon"
-                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
-                                        <i class="bi bi-download"></i>
-                                    </a>
+                                        <a asp-action="Details" asp-route-id="@file.Id" class="btn btn-secondary btn-icon"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="View details">
+                                            <i class="bi bi-info-circle"></i>
+                                        </a>
+                                    </div>
+                                    <div>
 
-                                    <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')"
-                                       class="btn btn-danger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
+                                        <a asp-action="Download" asp-route-id="@file.Id" class="btn btn-info btn-icon"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </div>
+                                    <div>
+
+                                        <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')"
+                                           class="btn btn-danger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
 
 
                                 </div>
