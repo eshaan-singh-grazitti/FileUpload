@@ -367,11 +367,6 @@ namespace FileUpload.Controllers
             return PartialView("_PreviewExcel", DTO);
         }
 
-        /// <summary>
-        /// Cleans the numeric value by removing symbols like "$" or other non-numeric characters.
-        /// </summary>
-        /// <param name="value">The string value to clean.</param>
-        /// <returns>The cleaned numeric value as a string.</returns>
         private string CleanNumericValue(string value)
         {
             if (string.IsNullOrWhiteSpace(value))

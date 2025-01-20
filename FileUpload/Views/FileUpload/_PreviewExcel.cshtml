@@ -69,6 +69,16 @@
             display: inline-block;
         }
 
+
+    .label-1 {
+        border-top-left-radius: 100%;
+        border-top-right-radius: 100%;
+    }
+    .label-2 {
+        border-bottom-left-radius: 100%;
+        border-bottom-right-radius: 100%;
+    }
+
 </style>
 
 @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
@@ -93,11 +103,11 @@
                                 </div>
 
                                 <div class="radio-input">
-                                    <label>
+                                    <label class="label-1">
                                         <input onclick="sortExcel(this,'@column','asc')" type="radio" id="value-1" name="value-radio" value="1" />
                                         <span>▲</span>
                                     </label>
-                                    <label>
+                                    <label class="label-2">
                                         <input onclick="sortExcel(this,'@column','desc')" type="radio" id="value-2" name="value-radio" value="2" />
                                         <span>▼</span>
                                     </label>
