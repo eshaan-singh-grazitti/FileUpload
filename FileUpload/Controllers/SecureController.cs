@@ -28,7 +28,7 @@ namespace FileUpload.Controllers
             //var data = await _context.ExcelChanges.ToListAsync();
             var data = await _context.ExcelChanges
                 .GroupBy(f => new { f.FileName, f.UserName }) // Group by FileName and UserName
-                .Select(g => g.OrderByDescending(f => f.ChangeDate).FirstOrDefault()) // Select the latest record in each group
+                .Select(g => g.OrderBy(f => f.ChangeDate).FirstOrDefault()) // Select the latest record in each group
                 .ToListAsync();
             return View(data);
         }

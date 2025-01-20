@@ -20,9 +20,9 @@
         <tbody>
             @if (Model.ExcelChangesData != null)
             {
-                for (int i = Model.ExcelChangesData.Count - 1; i >= 0; i--)
+                foreach(var change in Model.ExcelChangesData)
                 {
-                    var change = Model.ExcelChangesData[i];
+                    
                     <tr>
                         <td>@change.UserName</td>
                         <td>@change.FileName</td>

@@ -624,17 +624,17 @@ namespace FileUpload.Controllers
             bool allStrings = columnValues.All(value => value.All(c => char.IsLetter(c) || c == ' '));
             bool mixedFormat = columnValues.Any(value => value.StartsWith("$")) || columnValues.Any(value => value.Contains("st") || value.Contains("nd") || value.Contains("rd") || value.Contains("th"));
 
-            if (mixedFormat)
+            if (allStrings)
             {
-                return "mixed";
+                return "string";
             }
             else if (allNumeric)
             {
                 return "numeric";
             }
-            else if (allStrings)
+            else if (mixedFormat) 
             {
-                return "string";
+                return "mixed";
             }
             else
             {
