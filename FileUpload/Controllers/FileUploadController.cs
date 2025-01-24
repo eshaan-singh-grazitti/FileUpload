@@ -166,7 +166,7 @@ namespace FileUpload.Controllers
                         // Compress the file for thumbnails (no change in logic)
                         if (fileExt != ".xls" && fileExt != ".xlsx")
                         {
-                            if (fileExt == ".svg")
+                            if (fileExt == ".svg" || fileExt == ".webp")
                             {
                                 using (FileStream CompressedSvgPath = new FileStream(compressedFilePath, FileMode.Create))
                                 {
@@ -617,7 +617,6 @@ namespace FileUpload.Controllers
             }
         }
 
-        // Helper method to determine the format of a column based on existing data
         private string GetColumnFormat(List<string> columnValues)
         {
             bool allNumeric = columnValues.All(value => decimal.TryParse(value.Replace("$", "").Replace(",", ""), out _));
@@ -632,7 +631,7 @@ namespace FileUpload.Controllers
             {
                 return "numeric";
             }
-            else if (mixedFormat) 
+            else if (mixedFormat)
             {
                 return "mixed";
             }
@@ -642,7 +641,6 @@ namespace FileUpload.Controllers
             }
         }
 
-        // Helper method to validate input based on the detected format
         private bool ValidateInputFormat(string input, string columnFormat)
         {
             if (columnFormat == "numeric")
@@ -779,11 +777,13 @@ namespace FileUpload.Controllers
                     file.DeletedBy = user.UserName;
                 }
                 file.DeleteTime = DateTime.Now;
+                if (file.Extention == ".xls" || file.Extention == ".xlsx")
+                {
 
-                var data = await _context.ExcelChanges.FirstOrDefaultAsync(f => f.FileId == id);
+                    var data = await _context.ExcelChanges.FirstOrDefaultAsync(f => f.FileId == id);
+                    if(data != null)data.isDeleted = true;
 
-                data.isDeleted = true;
-
+                }
                 await _context.SaveChangesAsync();
 
                 ViewBag.MessageSuccess = "File Deleted Successfully";

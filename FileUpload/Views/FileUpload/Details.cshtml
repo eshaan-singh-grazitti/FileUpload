@@ -58,6 +58,13 @@
         max-width: 80vw;
         max-height: 80vh;
         overflow: auto;
+        min-height: 5   0vh;
+        position: relative;
+        /* width: 100%; */
+        filter: blur(10px);
+        transition: filter 0.5s;
+        /* background-color: #bfcbff; */
+        background-color: #dbe1fd;
     }
 
     .editable {
@@ -66,6 +73,16 @@
 
     .btna {
         width: 10rem;
+    }
+
+    #loading-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 30px;
+        color: #555;
+        z-index:1;
     }
 </style>
 
@@ -104,14 +121,17 @@
         }
         else
         {
-            <div class="img-div">
+            <div id="loading-text">
+                <p><strong>Loading image...</strong></p>
+            </div>
+            <div class="img-div" id="image-container">
                 <a href="#fullscreen">
-                    <img src="/Uploads/@Model.Filename" alt="Uploaded Image" class="thumbnail" style="max-width: auto; height: 60vh;" />
+                    <img src="/Uploads/@Model.Filename" id="uploaded-image" alt="Uploaded Image" class="thumbnail" style="max-width: auto; height: 60vh;display:none; " />
                 </a>
             </div>
             <div id="fullscreen">
                 <div class="fullscreen-overlay">
-                    <a href="#" class="close-btn ">Close</a>
+                    <a asp-action="Details" asp-route-id="@Model.Id" asp-controller="FileUpload" class="close-btn ">Close</a>
                     <img src="/Uploads/@Model.Filename" alt="Fullscreen Image" class="fullscreen-img">
                 </div>
             </div>
@@ -144,7 +164,29 @@
         sortExcel(param1, param2,param3);
     }
 
+    document.addEventListener("DOMContentLoaded", function () {
+        const image = document.getElementById("uploaded-image");
+        const loadingText = document.getElementById("loading-text");
+        const imageContainer = document.getElementById("image-container")
 
+        image.onload = function () {
+            loadingText.style.display = "none";
+            image.style.display = "block";
+            // image.style.filter = "none";
+            imageContainer.style.filter = "none";
+            imageContainer.style.backgroundColor = "#ffffff";
+        };
+
+        image.onerror = function () {
+            console.error("Error loading image");
+            loadingText.innerHTML = "Failed to load image.";
+        };
+
+        // Trigger onload if the image is already cached
+        if (image.complete) {
+            image.onload();
+        }
+    });
 
     let lastClicked = { column: null, direction: null };
 
@@ -265,7 +307,6 @@
             }
         });
     }
-
 
 
 </script>
