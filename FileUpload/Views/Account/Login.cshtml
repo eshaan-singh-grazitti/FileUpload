@@ -146,7 +146,7 @@
         <input asp-for="RememberMe" type="checkbox" class="form-check-input" />
         <label class="form-check-label" for="RememberMe">Remember Me</label>
     </div>
-
+    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
     <button type="submit" class="btn btn-primary submit">Sign in</button>
 
     <p class="signup-link">

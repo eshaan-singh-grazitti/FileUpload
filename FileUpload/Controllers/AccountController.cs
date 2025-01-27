@@ -84,11 +84,13 @@ namespace FileUpload.Controllers
                     }
 
                 }
+                ModelState.AddModelError(string.Empty, "Invalid Password");
+                return View(model);
 
             }
 
             ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-            return View(model);
+            return View();
         }
         public async Task<IActionResult> Logout(string returnUrl = null)
         {
