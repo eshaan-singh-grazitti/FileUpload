@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using NPOI.HPSF;
 using NPOI.HSSF.Record.Chart;
 using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using OfficeOpenXml;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -163,6 +165,20 @@ namespace FileUpload.Controllers
 
                             }
                         }
+                        if (fileExt == ".xlsx")
+                        {
+                            using var package = new ExcelPackage(new FileInfo(finalPath));
+
+                            var worksheet = package.Workbook.Worksheets.First(); // Get the first worksheet
+
+                            // Check if the worksheet is empty
+                            if (worksheet.Dimension == null)
+                            {
+                                System.IO.File.Delete(finalPath);
+                                ViewBag.Message = "*Excel file is empty.";
+                                return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                            }
+                        }
                         // Compress the file for thumbnails (no change in logic)
                         if (fileExt != ".xls" && fileExt != ".xlsx")
                         {
@@ -193,6 +209,7 @@ namespace FileUpload.Controllers
                                 }
                             }
                         }
+                        //return Ok("File uploaded and rows saved successfully.");
                         FileInfo fileInfo = new FileInfo(finalPath);
                         double fileSizeInBytes = fileInfo.Length;
                         double fileSizeInKB = fileSizeInBytes / 1024;
@@ -213,6 +230,22 @@ namespace FileUpload.Controllers
                         };
                         _context.FileUploadModal.Add(fileUploadModal);
                         await _context.SaveChangesAsync();
+                        if (fileExt == ".xls" || fileExt == ".xlsx")
+                        {
+
+                            using (var stream = new MemoryStream())
+                            {
+                                await file.CopyToAsync(stream);
+                                stream.Position = 0;
+
+                                var rows = ProcessExcelFile(stream, fileExt, fileUploadModal.Id);
+
+                                // Save rows to the database
+                                _context.RowsData.AddRange(rows);
+                                await _context.SaveChangesAsync();
+                            }
+
+                        }
                         ViewBag.MessageSuccess = "File uploaded successfully";
                     }
                     else
@@ -236,6 +269,44 @@ namespace FileUpload.Controllers
             return RedirectToAction("Index");
         }
 
+        private List<RowsData> ProcessExcelFile(Stream fileStream, string fileExt,int fileid)
+        {
+            var rows = new List<RowsData>();
+
+            IWorkbook workbook;
+            if (fileExt == ".xls")
+            {
+                workbook = new HSSFWorkbook(fileStream); // .xls format
+            }
+            else
+            {
+                workbook = new XSSFWorkbook(fileStream); // .xlsx format
+            }
+
+            var sheet = workbook.GetSheetAt(0); // Get the first sheet
+
+            for (int rowIndex = 1; rowIndex <= sheet.LastRowNum; rowIndex++) // Assuming the first row is the header
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var row = sheet.GetRow(rowIndex);
+                if (row != null)
+                {
+                    rows.Add(new RowsData
+                    {
+                        UserId = userId,
+                        FileId = fileid,
+                        Column1 = row.GetCell(0)?.ToString(),
+                        Column2 = row.GetCell(1)?.ToString(),
+                        Column3 = row.GetCell(2)?.ToString(),
+                        Column4 = row.GetCell(3)?.ToString(),
+                        Column5 = row.GetCell(4)?.ToString(),
+                        Column6 = row.GetCell(5)?.ToString()
+                    });
+                }
+            }
+
+            return rows;
+        }
         public static List<Dictionary<string, string>> PreviewExcel(string filePath, string fileExt)
         {
             var data = new List<Dictionary<string, string>>();
@@ -781,7 +852,7 @@ namespace FileUpload.Controllers
                 {
 
                     var data = await _context.ExcelChanges.FirstOrDefaultAsync(f => f.FileId == id);
-                    if(data != null)data.isDeleted = true;
+                    if (data != null) data.isDeleted = true;
 
                 }
                 await _context.SaveChangesAsync();
