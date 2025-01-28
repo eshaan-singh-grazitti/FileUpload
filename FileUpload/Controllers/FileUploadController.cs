@@ -286,7 +286,7 @@ namespace FileUpload.Controllers
 
             var sheet = workbook.GetSheetAt(0); // Get the first sheet
 
-            for (int rowIndex = 1; rowIndex <= sheet.LastRowNum; rowIndex++) // Assuming the first row is the header
+            for (int rowIndex = 0; rowIndex <= sheet.LastRowNum; rowIndex++) // Assuming the first row is the header
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var row = sheet.GetRow(rowIndex);
@@ -314,37 +314,47 @@ namespace FileUpload.Controllers
             if (fileId <= 0)
                 throw new ArgumentException("Invalid file ID.");
 
-            //if (string.IsNullOrWhiteSpace(userId))
-            //    throw new ArgumentException("Invalid user ID.");
-
+            // Fetch rows from the database for the given file ID
             var rows = _context.RowsData
                 .Where(r => r.FileId == fileId)
                 .OrderBy(o => o.Id)
                 .ToList();
 
+            // Ensure there are rows to process
+            if (rows.Count == 0)
+                return new List<Dictionary<string, string>>();
 
-            if (!rows.Any())
-                throw new InvalidOperationException("No data found for the specified file and user.");
-
-            // Convert rows to a list of dictionaries
-            var data = new List<Dictionary<string, string>>();
-            foreach (var row in rows)
+            // Use the first row as headers
+            var headers = new List<string>
             {
+                rows[0].Column1,
+                rows[0].Column2,
+                rows[0].Column3,
+                rows[0].Column4,
+                rows[0].Column5,
+                rows[0].Column6
+            };
+
+            // Process the remaining rows as data
+            var data = new List<Dictionary<string, string>>();
+            for (int i = 1; i < rows.Count; i++)
+            {
+                var row = rows[i];
                 var rowData = new Dictionary<string, string>
                 {
-                    { "Column1", row.Column1 },
-                    { "Column2", row.Column2 },
-                    { "Column3", row.Column3 },
-                    { "Column4", row.Column4 },
-                    { "Column5", row.Column5 },
-                    { "Column6", row.Column6 }
+                    { headers[0], row.Column1 },
+                    { headers[1], row.Column2 },
+                    { headers[2], row.Column3 },
+                    { headers[3], row.Column4 },
+                    { headers[4], row.Column5 },
+                    { headers[5], row.Column6 }
                 };
-
                 data.Add(rowData);
             }
 
             return data;
         }
+
 
         [HttpPost]
         public IActionResult LoadExcelPreview(int fileId, string sortColumn, string sortDirection)
@@ -428,62 +438,76 @@ namespace FileUpload.Controllers
                 // Retrieve rows from RowsData table
                 var rowsData = await _context.RowsData
                     .Where(r => r.FileId == data.Fileid)
+                    .OrderBy(r => r.Id) // Ensure consistent order
                     .ToListAsync();
 
-                var changes = new List<ExcelChanges>();
-
-                // Compare and update RowsData
-                for (int i = 0; i < data.UpdatedData.Count; i++)
+                if (!rowsData.Any())
                 {
-                    var updatedRow = data.UpdatedData[i];
-                    var existingRow = rowsData[i]; // Assuming row index matches database ID.
+                    return BadRequest(new { success = false, message = "No rows found for the given FileId." });
+                }
 
-                    if (existingRow != null)
+                var changes = new List<ExcelChanges>();
+                bool changeDetected = false;
+
+                // Process UpdatedData
+                for (int rowIndex = 0; rowIndex < data.UpdatedData.Count; rowIndex++)
+                {
+                    var updatedRow = data.UpdatedData[rowIndex];
+
+                    // Safely fetch the corresponding database row
+                    var existingRow = rowsData.ElementAtOrDefault(rowIndex + 1);
+                    if (existingRow == null)
+                        continue;
+
+                    for (int colIndex = 0; colIndex < updatedRow.Count; colIndex++)
                     {
-                        for (int colIndex = 0; colIndex < updatedRow.Count; colIndex++)
+                        var columnProperty = $"Column{colIndex + 1}";
+                        var oldValue = typeof(RowsData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
+                        var newValue = updatedRow[colIndex];
+
+                        if (oldValue != newValue)
                         {
-                            var columnProperty = $"Column{colIndex + 1}";
-                            var oldValue = typeof(RowsData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
-                            var newValue = updatedRow[colIndex];
-
-                            if (oldValue != newValue)
+                            changeDetected = true;
+                            // Log the change
+                            changes.Add(new ExcelChanges
                             {
-                                // Log the change
-                                changes.Add(new ExcelChanges
-                                {
-                                    UserName = userName,
-                                    UserID = userId,
-                                    FileId = data.Fileid,
-                                    FileName = data.FileName,
-                                    Row = i + 1,
-                                    Column = colIndex + 1,
-                                    OldValue = oldValue,
-                                    NewValue = newValue,
-                                    ChangeDate = DateTime.Now
-                                });
+                                UserName = userName,
+                                UserID = userId,
+                                FileId = data.Fileid,
+                                FileName = data.FileName,
+                                Row = rowIndex, // Assuming rows start from 1
+                                Column = colIndex, // Assuming columns start from 1
+                                OldValue = oldValue,
+                                NewValue = newValue,
+                                ChangeDate = DateTime.Now
+                            });
 
-                                // Update RowsData
-                                typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
-                            }
+                            // Update RowsData
+                            typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
                         }
                     }
                 }
 
-                // Save changes to RowsData and ExcelChanges table
+                // Save changes to the database
                 await _context.ExcelChanges.AddRangeAsync(changes);
                 await _context.SaveChangesAsync();
 
                 // Update the Excel file
-                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName);
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName); // Use original filename
                 UpdateExcelFile(filePath, data.UpdatedData);
 
-                return Ok(new { success = true , message = "Excel File Updated Successfully"});
+                if (changeDetected)
+                {
+                    return Ok(new { success = true, message = "Excel File Updated Successfully" });
+                }
+                return Ok(new { success = true, message = "No changes Detected" });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+
         private void UpdateExcelFile(string filePath, List<List<string>> updatedData)
         {
             IWorkbook workbook;
@@ -590,7 +614,7 @@ namespace FileUpload.Controllers
 
                 EXM = new ExcelChangesViewModel
                 {
-                    //ExcelData = PreviewExcel(filePath, fileExt),
+                    ExcelData = PreviewExcel(file.Id),
                     row = new List<int>(),
                     column = new List<int>(),
                     ExcelChangesData = new List<ExcelChanges>(),

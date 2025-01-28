@@ -164,33 +164,33 @@
         sortExcel(param1, param2,param3);
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        const image = document.getElementById("uploaded-image");
-        const loadingText = document.getElementById("loading-text");
-        const imageContainer = document.getElementById("image-container")
+    // document.addEventListener("DOMContentLoaded", function () {
+    //     const image = document.getElementById("uploaded-image");
+    //     const loadingText = document.getElementById("loading-text");
+    //     const imageContainer = document.getElementById("image-container")
 
-        image.onload = function () {
-            loadingText.style.display = "none";
-            image.style.display = "block";
-            // image.style.filter = "none";
-            imageContainer.style.filter = "none";
-            imageContainer.style.backgroundColor = "#ffffff";
-        };
+    //     image.onload = function () {
+    //         loadingText.style.display = "none";
+    //         image.style.display = "block";
+    //         // image.style.filter = "none";
+    //         imageContainer.style.filter = "none";
+    //         imageContainer.style.backgroundColor = "#ffffff";
+    //     };
 
-        image.onerror = function () {
-            console.error("Error loading image");
-            loadingText.innerHTML = "Failed to load image.";
-        };
+    //     image.onerror = function () {
+    //         console.error("Error loading image");
+    //         loadingText.innerHTML = "Failed to load image.";
+    //     };
 
-        // Trigger onload if the image is already cached
-        if (image.complete) {
-            image.onload();
-        }
-    });
+    //     // Trigger onload if the image is already cached
+    //     if (image.complete) {
+    //         image.onload();
+    //     }
+    // });
 
     let lastClicked = { column: null, direction: null };
 
-        function sortExcel(button, column, direction) {
+           function sortExcel(button, column, direction) {
         lastClicked = { column, direction };
         // Disable the clicked button
         button.disabled = true;
@@ -207,12 +207,15 @@
                 console.log(result);
                 $("#excelPreviewContainer").html(result);
 
+                // Maintain original row mappings after sorting
+                reapplyRowMapping();
+
                 // Re-enable the button after AJAX success
                 reapplyButtonState();
             },
             error: function (xhr) {
                 alert("Error: " + xhr.responseText);
-
+                console.log(xhr.responseText);
                 // Re-enable the button if there is an error
                 button.disabled = false;
             }
@@ -244,30 +247,41 @@
         }
     }
 
+        function reapplyRowMapping() {
+        const rows = document.querySelectorAll(".table-div-body .div-table-row");
 
-        document.getElementById("saveChanges").addEventListener("click", function () {
-            const rows = document.querySelectorAll(".table-div-body .div-table-row");
-            const updatedData = [];
-
-            rows.forEach((row) => {
-                const rowData = [];
-                row.querySelectorAll(".div-table-data").forEach((cell) => {
-                    rowData.push(cell.textContent.trim());
-                });
-                if (rowData.length > 0) updatedData.push(rowData);
-            });
-            const fileName = '@Model.Filename';
-            const fileid = '@Model.Id'
-            const ogFileName = '@Model.OriginalFilename'
-            SendData(fileid,fileName,updatedData,ogFileName);
-            document.getElementById("saveChanges").classList.add("editable");
-            document.getElementById("editBtn").classList.remove("editable");
-            const editDivs = document.querySelectorAll('#editDiv');
-            editDivs.forEach((div) => {
-              div.setAttribute('contenteditable', 'false');
-              div.style.border = "2px solid black";
-            });
+        rows.forEach((row, index) => {
+            // Set a data attribute to track the original row ID
+            row.setAttribute("data-original-row-id", index + 1);
         });
+    }
+
+
+    document.getElementById("saveChanges").addEventListener("click", function () {
+        const rows = document.querySelectorAll(".table-div-body .div-table-row");
+        const updatedData = [];
+
+        rows.forEach((row) => {
+            const rowData = [];
+            row.querySelectorAll(".div-table-data").forEach((cell) => {
+                rowData.push(cell.textContent.trim());
+            });
+            if (rowData.length > 0) updatedData.push(rowData);
+        });
+
+        const fileName = '@Model.Filename';
+        const fileid = '@Model.Id';
+        const ogFileName = '@Model.OriginalFilename';
+        sendData(fileid, fileName, updatedData, ogFileName);
+
+        document.getElementById("saveChanges").classList.add("editable");
+        document.getElementById("editBtn").classList.remove("editable");
+        const editDivs = document.querySelectorAll('#editDiv');
+        editDivs.forEach((div) => {
+            div.setAttribute('contenteditable', 'false');
+            div.style.border = "2px solid black";
+        });
+    });
 
         function hideEditBtn(){
             const editDivs = document.querySelectorAll('#editDiv');
@@ -279,31 +293,30 @@
             document.getElementById("saveChanges").classList.remove("editable");
         }
 
-    function SendData(fileid,fileName,updatedData,ogFileName) {
+    function sendData(fileid, fileName, updatedData, ogFileName) {
         $.ajax({
             url: '@Url.Action("SaveUpdatedExcel", "FileUpload")',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
-                Fileid:fileid,
-                FileName:fileName,
+                Fileid: fileid,
+                FileName: fileName,
                 UpdatedData: updatedData,
-                OgFileName : ogFileName
+                OgFileName: ogFileName
             }),
             success: function (result) {
                 if (result.success) {
-                    RefreshTable();
+                    refreshTable();
                     alert(result.message);
                     // Optionally, update the UI with new data
                     $("#excelPreviewContainer").html(result.newPreview); // Adjust according to the response
                 } else {
-                    console.log(result.message);
                     alert(result.message);
                 }
             },
             error: function (xhr) {
                 alert("Error: " + xhr.responseText);
-                    RefreshTable();
+                refreshTable();
             }
         });
     }

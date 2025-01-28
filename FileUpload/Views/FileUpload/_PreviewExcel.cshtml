@@ -144,12 +144,12 @@
             <div class="table-div-body">
                 @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
                 {
-                    foreach (var row in Model.ExcelValue)
+                    @foreach (var row in Model.ExcelValue.Select((row, index) => new { row, index }))
                     {
-                        <div class="div-table-row">
-                            @foreach (var cell in row.Values)
+                        <div class="div-table-row" data-row-id="@row.index">
+                            @foreach (var cell in row.row.Where(kv => kv.Key != "Id"))
                             {
-                                <div class="div-table-data" id="editDiv" style="padding: 8px;" contenteditable="false">@cell</div>
+                                <div class="div-table-data" id="editDiv" style="padding: 8px;" contenteditable="false" data-column="@cell.Key">@cell.Value</div>
                             }
                         </div>
                     }
