@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using NPOI.HPSF;
 using NPOI.HSSF.Record.Chart;
 using NPOI.HSSF.UserModel;
+using NPOI.OpenXmlFormats.Spreadsheet;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using OfficeOpenXml;
@@ -269,7 +270,7 @@ namespace FileUpload.Controllers
             return RedirectToAction("Index");
         }
 
-        private List<RowsData> ProcessExcelFile(Stream fileStream, string fileExt,int fileid)
+        private List<RowsData> ProcessExcelFile(Stream fileStream, string fileExt, int fileid)
         {
             var rows = new List<RowsData>();
 
@@ -307,80 +308,42 @@ namespace FileUpload.Controllers
 
             return rows;
         }
-        public static List<Dictionary<string, string>> PreviewExcel(string filePath, string fileExt)
+        public List<Dictionary<string, string>> PreviewExcel(int fileId)
         {
+            // Validate inputs
+            if (fileId <= 0)
+                throw new ArgumentException("Invalid file ID.");
+
+            //if (string.IsNullOrWhiteSpace(userId))
+            //    throw new ArgumentException("Invalid user ID.");
+
+            var rows = _context.RowsData
+                .Where(r => r.FileId == fileId)
+                .OrderBy(o => o.Id)
+                .ToList();
+
+
+            if (!rows.Any())
+                throw new InvalidOperationException("No data found for the specified file and user.");
+
+            // Convert rows to a list of dictionaries
             var data = new List<Dictionary<string, string>>();
-
-            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+            foreach (var row in rows)
             {
-                throw new FileNotFoundException("File not found.");
+                var rowData = new Dictionary<string, string>
+                {
+                    { "Column1", row.Column1 },
+                    { "Column2", row.Column2 },
+                    { "Column3", row.Column3 },
+                    { "Column4", row.Column4 },
+                    { "Column5", row.Column5 },
+                    { "Column6", row.Column6 }
+                };
+
+                data.Add(rowData);
             }
 
-            if (fileExt == ".xlsx")
-            {
-
-                using var package = new ExcelPackage(new FileInfo(filePath));
-
-                if (package.Workbook.Worksheets.Count == 0)
-                {
-                    throw new InvalidOperationException("No worksheets found in the Excel file.");
-                }
-
-                var worksheet = package.Workbook.Worksheets.First(); // First worksheet
-                var rowCount = worksheet.Dimension?.Rows ?? 0;
-                var colCount = worksheet.Dimension?.Columns ?? 0;
-
-                // Extract headers
-                var headers = new List<string>();
-                for (int col = 1; col <= colCount; col++)
-                {
-                    headers.Add(worksheet.Cells[1, col].Text);
-                }
-
-                // Extract data
-                for (int row = 2; row <= rowCount; row++) // Start from the second row (data rows)
-                {
-                    var rowData = new Dictionary<string, string>();
-                    for (int col = 1; col <= colCount; col++)
-                    {
-                        var cellValue = worksheet.Cells[row, col].Text;
-                        rowData[headers[col - 1]] = cellValue;
-                    }
-                    data.Add(rowData);
-                }
-
-            }
-            if (fileExt == ".xls")
-            {
-                using (FileStream file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                {
-                    var workbook = new HSSFWorkbook(file);  // Use HSSFWorkbook for .xls filesx
-                    var sheet = workbook.GetSheetAt(0);  // First sheet in the workbook
-
-                    var headers = new List<string>();
-                    var headerRow = sheet.GetRow(0);  // Read the first row as headers
-                    for (int col = 0; col < headerRow.LastCellNum; col++) // Use LastCellNum to iterate only through valid cells
-                    {
-                        var cell = headerRow.GetCell(col); // Safely get the cell
-                        headers.Add(cell?.ToString() ?? $"Column{col + 1}"); // Fallback to "ColumnX" if the cell is null
-                    }
-
-                    // Read the remaining rows
-                    for (int row = 1; row <= sheet.LastRowNum; row++)
-                    {
-                        var rowData = new Dictionary<string, string>();
-                        var dataRow = sheet.GetRow(row);
-                        for (int col = 0; col < headers.Count; col++)
-                        {
-                            var cellValue = dataRow?.GetCell(col)?.ToString() ?? string.Empty;
-                            rowData[headers[col]] = cellValue;
-                        }
-                        data.Add(rowData);
-                    }
-                }
-            }
             return data;
-
         }
 
         [HttpPost]
@@ -393,9 +356,10 @@ namespace FileUpload.Controllers
             }
 
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
+            //var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             // Get the Excel data
-            var excelData = PreviewExcel(filePath, file.Extention);
+            var excelData = PreviewExcel(fileId);
 
             // Apply sorting if requested
             if (!string.IsNullOrEmpty(sortColumn) && !string.IsNullOrEmpty(sortDirection))
@@ -456,235 +420,101 @@ namespace FileUpload.Controllers
         [HttpPost]
         public async Task<IActionResult> SaveUpdatedExcel([FromBody] DataRequest data)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userName = User.Identity.Name;
+
             try
             {
-                string fileName = data.FileName;
-                string ogFileName = data.OgFileName;
-                List<List<string>> updatedData = data.UpdatedData;
-                int fileid = data.Fileid;
+                // Retrieve rows from RowsData table
+                var rowsData = await _context.RowsData
+                    .Where(r => r.FileId == data.Fileid)
+                    .ToListAsync();
 
-                // Reconstruct the full file path
-                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
+                var changes = new List<ExcelChanges>();
 
-                // Ensure the file exists
-                if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+                // Compare and update RowsData
+                for (int i = 0; i < data.UpdatedData.Count; i++)
                 {
-                    return BadRequest("File not found.");
-                }
+                    var updatedRow = data.UpdatedData[i];
+                    var existingRow = rowsData[i]; // Assuming row index matches database ID.
 
-                // Initialize a flag to track changes
-                bool changesDetected = false;
-
-                // Determine file extension
-                var fileExt = Path.GetExtension(filePath).ToLower();
-
-                if (fileExt == ".xlsx")
-                {
-                    using var package = new ExcelPackage(new FileInfo(filePath));
-
-                    if (package.Workbook.Worksheets.Count == 0)
+                    if (existingRow != null)
                     {
-                        throw new InvalidOperationException("No worksheets found in the Excel file.");
-                    }
-
-                    var worksheet = package.Workbook.Worksheets.First(); // First worksheet
-                    var rowCount = updatedData.Count;
-                    var colCount = updatedData.FirstOrDefault()?.Count ?? 0;
-
-                    // Loop through columns and validate the input
-                    for (int col = 0; col < colCount; col++)
-                    {
-                        // Check the format of existing values in the column
-                        var columnValues = new List<string>();
-                        for (int row = 0; row < rowCount; row++)
+                        for (int colIndex = 0; colIndex < updatedRow.Count; colIndex++)
                         {
-                            var cellValue = worksheet.Cells[row + 2, col + 1].Text; // Excel data starts from row 2
-                            columnValues.Add(cellValue);
-                        }
+                            var columnProperty = $"Column{colIndex + 1}";
+                            var oldValue = typeof(RowsData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
+                            var newValue = updatedRow[colIndex];
 
-                        // Check the data format of the column
-                        string columnFormat = GetColumnFormat(columnValues);
-
-                        // Validate user input based on column format
-                        for (int row = 0; row < rowCount; row++)
-                        {
-                            var newValue = updatedData[row][col].ToString();
-                            if (worksheet.Cells[row + 2, col + 1].Text != newValue)
+                            if (oldValue != newValue)
                             {
-
-                                if (!ValidateInputFormat(newValue, columnFormat))
+                                // Log the change
+                                changes.Add(new ExcelChanges
                                 {
-                                    return BadRequest($"Invalid input format in column {col + 1}, row {row + 1}. Expected format: {columnFormat}");
-                                }
-                            }
-                        }
-
-                        // Update the data in the worksheet if valid
-                        for (int row = 0; row < rowCount; row++)
-                        {
-                            var cellValue = worksheet.Cells[row + 2, col + 1].Text;
-                            var newValue = updatedData[row][col].ToString();
-                            string sanitizedValue = newValue.Replace("$", "").Replace(",", "");
-
-                            if (decimal.TryParse(sanitizedValue, out decimal parsedValue))
-                            {
-                                // Check if the value has more than two decimal places
-                                if (parsedValue != Math.Round(parsedValue, 2))
-                                {
-                                    // Round the value to two decimal places
-                                    newValue = "$" + Math.Round(parsedValue, 2).ToString("F2");
-                                }
-                            }
-
-                            // Check if the value length exceeds 30 characters
-                            if (newValue.Length > 30)
-                            {
-                                // Truncate the value to 30 characters
-                                newValue = newValue.Substring(0, 30);
-                            }
-                            if (cellValue != newValue)
-                            {
-                                changesDetected = true; // Set the flag if a change is detected
-                                var change = new ExcelChanges
-                                {
-                                    UserID = User.FindFirstValue(ClaimTypes.NameIdentifier),
-                                    UserName = User.Identity.Name,
-                                    FileId = fileid,
-                                    FileName = ogFileName,
-                                    Column = col,
-                                    Row = row,
-                                    OldValue = cellValue,
+                                    UserName = userName,
+                                    UserID = userId,
+                                    FileId = data.Fileid,
+                                    FileName = data.FileName,
+                                    Row = i + 1,
+                                    Column = colIndex + 1,
+                                    OldValue = oldValue,
                                     NewValue = newValue,
                                     ChangeDate = DateTime.Now
-                                };
+                                });
 
-                                await _context.ExcelChanges.AddAsync(change);
-                                updatedData[row][col] = newValue;
-                                worksheet.Cells[row + 2, col + 1].Value = updatedData[row][col]; // Data starts from row 2
-                            }
-                        }
-                    }
-
-                    if (changesDetected)
-                    {
-                        await _context.SaveChangesAsync();
-                        package.Save();
-                    }
-                }
-                else if (fileExt == ".xls")
-                {
-                    using (FileStream file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
-                    {
-                        var workbook = new HSSFWorkbook(file);
-                        var sheet = workbook.GetSheetAt(0); // First sheet
-                        var rowCount = updatedData.Count;
-                        var colCount = updatedData.FirstOrDefault() != null ? updatedData.First().Count : 0;
-
-
-                        // Loop through columns and validate the input
-                        for (int col = 0; col < colCount; col++)
-                        {
-                            // Check the format of existing values in the column
-                            var columnValues = new List<string>();
-                            for (int row = 0; row < updatedData.Count; row++)
-                            {
-                                var cellValue = sheet.GetRow(row + 1)?.GetCell(col)?.ToString(); // Excel data starts from row 1
-                                columnValues.Add(cellValue ?? string.Empty);
-                            }
-
-                            // Check the data format of the column
-                            string columnFormat = GetColumnFormat(columnValues);
-
-                            // Validate user input based on column format
-                            for (int row = 0; row < updatedData.Count; row++)
-                            {
-                                var newValue = updatedData[row][col].ToString();
-                                if (sheet.GetRow(row + 1)?.GetCell(col)?.ToString() != newValue)
-                                {
-
-                                    if (!ValidateInputFormat(newValue, columnFormat))
-                                    {
-                                        return BadRequest($"Invalid input format in column {col + 1}, row {row + 1}. Expected format: {columnFormat}");
-                                    }
-                                }
-                            }
-
-                            // Update the data in the sheet if valid
-                            for (int row = 0; row < updatedData.Count; row++)
-                            {
-                                var dataRow = sheet.GetRow(row + 1) ?? sheet.CreateRow(row + 1);
-                                var cell = dataRow.GetCell(col) ?? dataRow.CreateCell(col);
-                                var cellValue = cell.ToString();
-                                var newValue = updatedData[row][col].ToString();
-                                string sanitizedValue = newValue.Replace("$", "").Replace(",", "");
-
-                                if (decimal.TryParse(sanitizedValue, out decimal parsedValue))
-                                {
-                                    // Check if the value has more than two decimal places
-                                    if (parsedValue != Math.Round(parsedValue, 2))
-                                    {
-                                        // Round the value to two decimal places
-                                        newValue = "$" + Math.Round(parsedValue, 2).ToString("F2");
-                                    }
-                                }
-
-                                // Check if the value length exceeds 30 characters
-                                if (newValue.Length > 30)
-                                {
-                                    // Truncate the value to 30 characters
-                                    newValue = newValue.Substring(0, 30);
-                                }
-
-                                if (cellValue != newValue)
-                                {
-                                    changesDetected = true; // Set the flag if a change is detected
-                                    var change = new ExcelChanges
-                                    {
-                                        UserID = User.FindFirstValue(ClaimTypes.NameIdentifier),
-                                        UserName = User.Identity.Name,
-                                        FileId = fileid,
-                                        FileName = fileName,
-                                        Column = col,
-                                        Row = row,
-                                        OldValue = cellValue,
-                                        NewValue = newValue,
-                                        ChangeDate = DateTime.Now
-                                    };
-                                    updatedData[row][col] = newValue;
-                                    await _context.ExcelChanges.AddAsync(change);
-                                    cell.SetCellValue(updatedData[row][col]);
-                                }
-                            }
-                        }
-
-                        if (changesDetected)
-                        {
-                            await _context.SaveChangesAsync();
-                            // Save changes to the file
-                            using (var outputFile = new FileStream(filePath, FileMode.Open, FileAccess.Write))
-                            {
-                                workbook.Write(outputFile);
+                                // Update RowsData
+                                typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
                             }
                         }
                     }
                 }
-                else
-                {
-                    return BadRequest("Unsupported file format.");
-                }
 
-                // Check if changes were detected
-                if (!changesDetected)
-                {
-                    return Json(new { success = true, message = "No changes detected in the Excel file." });
-                }
-                var result = LoadExcelPreview(fileid, null, null);
-                return Json(new { success = true, message = "Excel file updated successfully.", data = result });
-                //return (result);
+                // Save changes to RowsData and ExcelChanges table
+                await _context.ExcelChanges.AddRangeAsync(changes);
+                await _context.SaveChangesAsync();
+
+                // Update the Excel file
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName);
+                UpdateExcelFile(filePath, data.UpdatedData);
+
+                return Ok(new { success = true , message = "Excel File Updated Successfully"});
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"Error: {ex.Message}" });
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        private void UpdateExcelFile(string filePath, List<List<string>> updatedData)
+        {
+            IWorkbook workbook;
+            using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
+            {
+                if (Path.GetExtension(filePath).ToLower() == ".xls")
+                {
+                    workbook = new HSSFWorkbook(fileStream); // For .xls
+                }
+                else
+                {
+                    workbook = new XSSFWorkbook(fileStream); // For .xlsx
+                }
+            }
+
+            var sheet = workbook.GetSheetAt(0); // Assuming data is in the first sheet.
+
+            for (int rowIndex = 0; rowIndex < updatedData.Count; rowIndex++)
+            {
+                var excelRow = sheet.GetRow(rowIndex) ?? sheet.CreateRow(rowIndex);
+
+                for (int colIndex = 0; colIndex < updatedData[rowIndex].Count; colIndex++)
+                {
+                    var cell = excelRow.GetCell(colIndex) ?? excelRow.CreateCell(colIndex);
+                    cell.SetCellValue(updatedData[rowIndex][colIndex]);
+                }
+            }
+
+            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Write))
+            {
+                workbook.Write(fs);
             }
         }
 
@@ -760,7 +590,7 @@ namespace FileUpload.Controllers
 
                 EXM = new ExcelChangesViewModel
                 {
-                    ExcelData = PreviewExcel(filePath, fileExt),
+                    //ExcelData = PreviewExcel(filePath, fileExt),
                     row = new List<int>(),
                     column = new List<int>(),
                     ExcelChangesData = new List<ExcelChanges>(),
@@ -791,23 +621,6 @@ namespace FileUpload.Controllers
             if (file == null)
             {
                 return BadRequest("File Not Found");
-            }
-
-            string fileName = Path.GetFileName(file.Filename);
-            string fileExt = Path.GetExtension(file.Filename);
-
-            // Check file type
-            if (fileExt == ".xls" || fileExt == ".xlsx")
-            {
-
-                // Optional: Load initial preview (default unsorted)
-                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
-                var excelData = PreviewExcel(filePath, fileExt);
-                DTO.ExcelValue = excelData;
-            }
-            else
-            {
-                // It will go to the details page.
             }
 
             return View(file);
