@@ -116,11 +116,11 @@
 <div class="table-main-div mt-4">
     @if (Model.ExcelData != null && Model.ExcelData.Count > 0)
     {
-        <div class=" rounded ">
+        <div class="rounded">
             <table class="detail-table table table-striped align-middle text-center">
                 <thead class="table-dark">
                     <tr>
-                        @foreach (var column in Model.ExcelData[0].Keys)
+                        @foreach (var column in Model.ExcelData[0].Keys.Where(c => c != "0")) // Exclude "0" column
                         {
                             <th class="px-4 py-3 fw-bold border-end" style="min-width:9rem;">
                                 @column
@@ -129,44 +129,35 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var row in Model.ExcelData.Select((value, index) => new { RowData = value, RowIndex = index })) // Get row index (0-based)
+                    @foreach (var row in Model.ExcelData.Select((value, index) => new { RowData = value, RowIndex = index + 1 })) // Get row index (0-based)
                     {
                         <tr class="table-row">
-                            @foreach (var cell in row.RowData.Values.Select((value, index) => new { CellValue = value, ColumnIndex = index })) // Get column index (0-based)
+                            @foreach (var cell in row.RowData.Where(kv => kv.Key != "0").Select((value, index) => new { CellValue = value.Value, ColumnIndex = index + 1 })) // Exclude "0" column
                             {
-                                // Check if both row and column are present in Model.row and Model.column
-                                bool isColChanged = Model.column.Contains(cell.ColumnIndex);  // 1-based row index
+                                bool isColChanged = Model.column.Contains(cell.ColumnIndex);
                                 bool isRowChanged = Model.row.Contains(row.RowIndex);
 
-                                int rIndex = @row.RowIndex;
-                                rIndex++;
-                                int cIndex = @cell.ColumnIndex;
-                                cIndex++;
+                                int rIndex = row.RowIndex + 1;
+                                int cIndex = cell.ColumnIndex + 1;
 
-                                if (isRowChanged)
+                                if (isRowChanged && isColChanged)
                                 {
-                                    if (isColChanged)
+                                    var dataFromDb = Model.ExcelChangesData
+                                    .Where(a => a.Row == row.RowIndex && a.Column == cell.ColumnIndex)
+                                    .OrderByDescending(u => u.ChangeDate)
+                                    .FirstOrDefault();
+
+                                    if (dataFromDb != null)
                                     {
-                                        var dataFromDb = Model.ExcelChangesData
-                                        .Where(a => a.Row == @row.RowIndex && a.Column == cell.ColumnIndex)
-                                        .OrderByDescending(u => u.ChangeDate)
-                                        .FirstOrDefault();
-                                        if (dataFromDb != null)
-                                        {
-                                            <td class="px-4 py-3 fw-bold text-dark bg-warning bg-opacity-25 border-end border-dark"
-                                                style="cursor:pointer;"
-                                                data-bs-toggle="tooltip"
-                                                data-bs-html="true"
-                                                title="<strong>Old Value:</strong> @dataFromDb.OldValue">
-                                                @cell.CellValue
-                                            </td>
-                                            Model.row.Remove(row.RowIndex);
-                                            Model.column.Remove(cell.ColumnIndex);
-                                        }
-                                        else
-                                        {
-                                            <td class="px-4 py-3 border-end">@cell.CellValue</td>
-                                        }
+                                        <td class="px-4 py-3 fw-bold text-dark bg-warning bg-opacity-25 border-end border-dark"
+                                            style="cursor:pointer;"
+                                            data-bs-toggle="tooltip"
+                                            data-bs-html="true"
+                                            title="<strong>Old Value:</strong> @dataFromDb.OldValue">
+                                            @cell.CellValue
+                                        </td>
+                                        @* Model.row.Remove(row.RowIndex); *@
+                                        @* Model.column.Remove(cell.ColumnIndex); *@
                                     }
                                     else
                                     {
@@ -191,6 +182,7 @@
         </div>
     }
 </div>
+
 
 
 <script>

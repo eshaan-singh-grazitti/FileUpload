@@ -164,33 +164,36 @@
         sortExcel(param1, param2,param3);
     }
 
-    // document.addEventListener("DOMContentLoaded", function () {
-    //     const image = document.getElementById("uploaded-image");
-    //     const loadingText = document.getElementById("loading-text");
-    //     const imageContainer = document.getElementById("image-container")
+    document.addEventListener("DOMContentLoaded", function () {
+        const image = document.getElementById("uploaded-image");
+        const loadingText = document.getElementById("loading-text");
+        const imageContainer = document.getElementById("image-container")
 
-    //     image.onload = function () {
-    //         loadingText.style.display = "none";
-    //         image.style.display = "block";
-    //         // image.style.filter = "none";
-    //         imageContainer.style.filter = "none";
-    //         imageContainer.style.backgroundColor = "#ffffff";
-    //     };
+         if (image && image.src.trim() !== "")
+         {
+            image.onload = function () {
+            loadingText.style.display = "none";
+            image.style.display = "block";
+            // image.style.filter = "none";
+            imageContainer.style.filter = "none";
+            imageContainer.style.backgroundColor = "#ffffff";
+            };
 
-    //     image.onerror = function () {
-    //         console.error("Error loading image");
-    //         loadingText.innerHTML = "Failed to load image.";
-    //     };
+            image.onerror = function () {
+            console.error("Error loading image");
+            loadingText.innerHTML = "Failed to load image.";
+            };
 
-    //     // Trigger onload if the image is already cached
-    //     if (image.complete) {
-    //         image.onload();
-    //     }
-    // });
+            // Trigger onload if the image is already cached
+            if (image.complete) {
+                image.onload();
+            }
+         }
+    });
 
     let lastClicked = { column: null, direction: null };
 
-           function sortExcel(button, column, direction) {
+    function sortExcel(button, column, direction) {
         lastClicked = { column, direction };
         // Disable the clicked button
         button.disabled = true;
@@ -306,10 +309,12 @@
             }),
             success: function (result) {
                 if (result.success) {
-                    refreshTable();
                     alert(result.message);
-                    // Optionally, update the UI with new data
-                    $("#excelPreviewContainer").html(result.newPreview); // Adjust according to the response
+                    $("#excelPreviewContainer").html(result.data); // Adjust according to the response
+                    // refreshTable();
+                    sortExcel("","","");
+                    // location.reload();
+
                 } else {
                     alert(result.message);
                 }

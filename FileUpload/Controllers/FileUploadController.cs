@@ -1,14 +1,9 @@
-﻿using DocumentFormat.OpenXml.Office2010.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
-using FileUpload.Data;
+﻿using FileUpload.Data;
 using FileUpload.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NPOI.HPSF;
-using NPOI.HSSF.Record.Chart;
 using NPOI.HSSF.UserModel;
-using NPOI.OpenXmlFormats.Spreadsheet;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using OfficeOpenXml;
@@ -294,6 +289,7 @@ namespace FileUpload.Controllers
                 {
                     rows.Add(new RowsData
                     {
+                        RowId = rowIndex.ToString(),
                         UserId = userId,
                         FileId = fileid,
                         Column1 = row.GetCell(0)?.ToString(),
@@ -327,6 +323,8 @@ namespace FileUpload.Controllers
             // Use the first row as headers
             var headers = new List<string>
             {
+
+                rows[0].RowId,
                 rows[0].Column1,
                 rows[0].Column2,
                 rows[0].Column3,
@@ -342,19 +340,20 @@ namespace FileUpload.Controllers
                 var row = rows[i];
                 var rowData = new Dictionary<string, string>
                 {
-                    { headers[0], row.Column1 },
-                    { headers[1], row.Column2 },
-                    { headers[2], row.Column3 },
-                    { headers[3], row.Column4 },
-                    { headers[4], row.Column5 },
-                    { headers[5], row.Column6 }
+
+                    { headers[0], row.RowId },
+                    { headers[1], row.Column1 },
+                    { headers[2], row.Column2 },
+                    { headers[3], row.Column3 },
+                    { headers[4], row.Column4 },
+                    { headers[5], row.Column5 },
+                    { headers[6], row.Column6 }
                 };
                 data.Add(rowData);
             }
 
             return data;
         }
-
 
         [HttpPost]
         public IActionResult LoadExcelPreview(int fileId, string sortColumn, string sortDirection)
@@ -435,10 +434,10 @@ namespace FileUpload.Controllers
 
             try
             {
-                // Retrieve rows from RowsData table
+                // Retrieve rows from RowsData table and order by rowid (ascending)
                 var rowsData = await _context.RowsData
                     .Where(r => r.FileId == data.Fileid)
-                    .OrderBy(r => r.Id) // Ensure consistent order
+                    .OrderBy(r => r.RowId) // Sorting by RowId in ascending order
                     .ToListAsync();
 
                 if (!rowsData.Any())
@@ -450,20 +449,22 @@ namespace FileUpload.Controllers
                 bool changeDetected = false;
 
                 // Process UpdatedData
-                for (int rowIndex = 0; rowIndex < data.UpdatedData.Count; rowIndex++)
+                for (int rowIndex = 1; rowIndex <= data.UpdatedData.Count; rowIndex++)
                 {
-                    var updatedRow = data.UpdatedData[rowIndex];
+                    var updatedRow = data.UpdatedData[rowIndex - 1];
 
-                    // Safely fetch the corresponding database row
-                    var existingRow = rowsData.ElementAtOrDefault(rowIndex + 1);
+                    // Find the corresponding row based on rowid (matching by RowId)
+                    var rowId = updatedRow[0]; // Assuming the rowId is the first key (or column) of the updated data
+                    var existingRow = rowsData.FirstOrDefault(r => r.RowId == rowId.ToString());
+
                     if (existingRow == null)
                         continue;
 
-                    for (int colIndex = 0; colIndex < updatedRow.Count; colIndex++)
+                    for (int colIndex = 1; colIndex < updatedRow.Count; colIndex++)
                     {
-                        var columnProperty = $"Column{colIndex + 1}";
+                        var columnProperty = $"Column{colIndex}";
                         var oldValue = typeof(RowsData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
-                        var newValue = updatedRow[colIndex];
+                        var newValue = updatedRow.ElementAt(colIndex);
 
                         if (oldValue != newValue)
                         {
@@ -475,14 +476,14 @@ namespace FileUpload.Controllers
                                 UserID = userId,
                                 FileId = data.Fileid,
                                 FileName = data.FileName,
-                                Row = rowIndex, // Assuming rows start from 1
+                                Row = Convert.ToInt32(rowId), // Assuming rows start from 1
                                 Column = colIndex, // Assuming columns start from 1
                                 OldValue = oldValue,
                                 NewValue = newValue,
                                 ChangeDate = DateTime.Now
                             });
 
-                            // Update RowsData
+                            // Update RowsData with new value
                             typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
                         }
                     }
@@ -492,13 +493,16 @@ namespace FileUpload.Controllers
                 await _context.ExcelChanges.AddRangeAsync(changes);
                 await _context.SaveChangesAsync();
 
-                // Update the Excel file
-                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName); // Use original filename
-                UpdateExcelFile(filePath, data.UpdatedData);
+                // Sort the updated rows based on RowId in ascending order
+                rowsData = rowsData.OrderBy(r => r.RowId).ToList();
+
+                // Update the Excel file with sorted data
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName);
+                UpdateExcelFile(filePath, rowsData);
 
                 if (changeDetected)
                 {
-                    return Ok(new { success = true, message = "Excel File Updated Successfully" });
+                    return Ok(new { success = true, message = "Excel File Updated Successfully", data = DTO});
                 }
                 return Ok(new { success = true, message = "No changes Detected" });
             }
@@ -508,9 +512,11 @@ namespace FileUpload.Controllers
             }
         }
 
-        private void UpdateExcelFile(string filePath, List<List<string>> updatedData)
+        private void UpdateExcelFile(string filePath, List<RowsData> updatedData)
         {
             IWorkbook workbook;
+
+            // Open the Excel file
             using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
             {
                 if (Path.GetExtension(filePath).ToLower() == ".xls")
@@ -529,13 +535,21 @@ namespace FileUpload.Controllers
             {
                 var excelRow = sheet.GetRow(rowIndex) ?? sheet.CreateRow(rowIndex);
 
-                for (int colIndex = 0; colIndex < updatedData[rowIndex].Count; colIndex++)
+                var updatedRow = updatedData[rowIndex]; // Get the corresponding row data from updatedData
+
+                // Loop through the columns (skipping RowId, starting from Column1 to Column6)
+                for (int colIndex = 1; colIndex <= 6; colIndex++) // Start from column 1 (Column1)
                 {
-                    var cell = excelRow.GetCell(colIndex) ?? excelRow.CreateCell(colIndex);
-                    cell.SetCellValue(updatedData[rowIndex][colIndex]);
+                    // Get the corresponding value from the updatedRow
+                    var columnValue = typeof(RowsData).GetProperty($"Column{colIndex}")?.GetValue(updatedRow)?.ToString();
+
+                    // Set the cell value in the Excel sheet
+                    var cell = excelRow.GetCell(colIndex - 1);
+                    cell.SetCellValue(columnValue);
                 }
             }
 
+            // Save the changes to the Excel file
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Write))
             {
                 workbook.Write(fs);
@@ -604,6 +618,10 @@ namespace FileUpload.Controllers
                 .OrderBy(f => f.Id)
                 .ToList())
                 .FirstOrDefault();
+            var rowIds = _context.RowsData
+                     .Select(r => r.RowId)
+                     .ToList();
+
             var filename = file.Filename;
             string fileExt = Path.GetExtension(filename).ToLower();
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", filename);
@@ -623,10 +641,13 @@ namespace FileUpload.Controllers
                     deteleTime = file.DeleteTime
                 };
 
+                for (var i = 1; i < rowIds.Count; i++)
+                {
+                    EXM.row.Add(Convert.ToInt32(rowIds[i]));
+                }
 
                 for (var i = 0; i < file1.Count; i++)
                 {
-                    EXM.row.Add(file1[i].Row);
                     EXM.column.Add(file1[i].Column);
                     EXM.ExcelChangesData.Add(file1[i]);
                 }

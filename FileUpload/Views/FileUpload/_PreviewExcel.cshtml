@@ -45,57 +45,58 @@
             text-align: center;
         }
 
-    .div-head{
-        word-break:normal !important;
+    .div-head {
+        word-break: normal !important;
     }
 
 
-        /* When the radio input is checked */
-        .radio-input input:checked + label:nth-child(1) {
-            color: #fff;
-            background-color: rgb(255, 4, 4); /* Red color for the first label */
-        }
+    /* When the radio input is checked */
+    .radio-input input:checked + label:nth-child(1) {
+        color: #fff;
+        background-color: rgb(255, 4, 4); /* Red color for the first label */
+    }
 
-        .radio-input input:checked + label:nth-child(2) {
-            color: #fff;
-            background-color: rgb(0, 172, 29); /* Green color for the second label */
-        }
+    .radio-input input:checked + label:nth-child(2) {
+        color: #fff;
+        background-color: rgb(0, 172, 29); /* Green color for the second label */
+    }
 
 
 
-        /* When the radio input is disabled, prevent interaction */
-        .radio-input input:disabled + label {
-            cursor: not-allowed;
-            opacity: 0.6; /* Dimmed label when input is disabled */
-        }
+    /* When the radio input is disabled, prevent interaction */
+    .radio-input input:disabled + label {
+        cursor: not-allowed;
+        opacity: 0.6; /* Dimmed label when input is disabled */
+    }
 
-        /* When the radio input is checked and disabled, retain the background color */
-        .radio-input input:disabled:checked + label:nth-child(1) {
-            background-color: rgba(255, 4, 4, 0.6); /* Lightened red when disabled and checked */
-            color: #fff;
-        }
+    /* When the radio input is checked and disabled, retain the background color */
+    .radio-input input:disabled:checked + label:nth-child(1) {
+        background-color: rgba(255, 4, 4, 0.6); /* Lightened red when disabled and checked */
+        color: #fff;
+    }
 
-        .radio-input input:disabled:checked + label:nth-child(2) {
-            background-color: rgba(0, 172, 29, 0.6); /* Lightened green when disabled and checked */
-            color: #fff;
-        }
+    .radio-input input:disabled:checked + label:nth-child(2) {
+        background-color: rgba(0, 172, 29, 0.6); /* Lightened green when disabled and checked */
+        color: #fff;
+    }
 
-        /* Ensure the selection is visible and remains after disabling */
-        .radio-input input:disabled:checked + label:nth-child(1) ~ .selection {
-            background-color: rgba(255, 4, 4, 0.6);
-            display: inline-block;
-        }
+    /* Ensure the selection is visible and remains after disabling */
+    .radio-input input:disabled:checked + label:nth-child(1) ~ .selection {
+        background-color: rgba(255, 4, 4, 0.6);
+        display: inline-block;
+    }
 
-        .radio-input input:disabled:checked + label:nth-child(2) ~ .selection {
-            background-color: rgba(0, 172, 29, 0.6);
-            display: inline-block;
-        }
+    .radio-input input:disabled:checked + label:nth-child(2) ~ .selection {
+        background-color: rgba(0, 172, 29, 0.6);
+        display: inline-block;
+    }
 
 
     .label-1 {
         border-top-left-radius: 100%;
         border-top-right-radius: 100%;
     }
+
     .label-2 {
         border-bottom-left-radius: 100%;
         border-bottom-right-radius: 100%;
@@ -119,38 +120,52 @@
                     {
                         foreach (var column in Model.ExcelValue[0].Keys)
                         {
-                            <div class="div-table-data div-head table-dark" style="padding: 5px; text-align: left;">
-                                <div class="data-div">
-                                    @column
+                            // Exclude the "0" header and hide it
+                            if (column == "0")
+                            {
+                                <!-- Hide the "0" column header -->
+                                <div class="div-table-data div-head table-dark" style="display: none;"></div>
+                            }
+                            else
+                            {
+                                <div class="div-table-data div-head table-dark" style="padding: 5px; text-align: left;">
+                                    <div class="data-div">
+                                        @column
+                                    </div>
+
+                                    <div class="radio-input">
+                                        <label class="label-1">
+                                            <input onclick="sortExcel(this,'@column','asc')" type="radio" id="value-1" name="value-radio" value="1" />
+                                            <span>▲</span>
+                                        </label>
+                                        <label class="label-2">
+                                            <input onclick="sortExcel(this,'@column','desc')" type="radio" id="value-2" name="value-radio" value="2" />
+                                            <span>▼</span>
+                                        </label>
+                                    </div>
                                 </div>
-
-                                <div class="radio-input">
-                                    <label class="label-1">
-                                        <input onclick="sortExcel(this,'@column','asc')" type="radio" id="value-1" name="value-radio" value="1" />
-                                        <span>▲</span>
-                                    </label>
-                                    <label class="label-2">
-                                        <input onclick="sortExcel(this,'@column','desc')" type="radio" id="value-2" name="value-radio" value="2" />
-                                        <span>▼</span>
-                                    </label>
-
-                                </div>
-
-                            </div>
+                            }
                         }
                     }
                 </div>
             </div>
+
             <div class="table-div-body">
                 @if (Model.ExcelValue != null && Model.ExcelValue.Count > 0)
                 {
                     @foreach (var row in Model.ExcelValue.Select((row, index) => new { row, index }))
                     {
                         <div class="div-table-row" data-row-id="@row.index">
-                            @foreach (var cell in row.row.Where(kv => kv.Key != "Id"))
+                            <!-- Include and hide the "0" column data but keep it available for other functionalities -->
+                            @foreach (var cell in row.row.Where(kv => kv.Key == "0"))
+                            {
+                                <div class="div-table-data" style="display: none;" data-column="@cell.Key">@cell.Value</div>
+                            }
+                            @foreach (var cell in row.row.Where(kv => kv.Key != "0"))
                             {
                                 <div class="div-table-data" id="editDiv" style="padding: 8px;" contenteditable="false" data-column="@cell.Key">@cell.Value</div>
                             }
+
                         </div>
                     }
                 }
@@ -162,6 +177,8 @@
                 }
             </div>
         </div>
+
+
     </div>
 }
 @if (@Model.ErrorMsg != null)
