@@ -90,7 +90,7 @@
 
 <div class="card">
     <div class="card-header">
-        @Model.OriginalFilename
+        @* @Model.OriginalFilename *@
     </div>
     <div class="card-body">
         <h4>Preview:</h4>
@@ -152,16 +152,14 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
         $(document).ready(function () {
-        var param1 = "";
-        var param2 = "";
-        var param3 = "";
+        var param1 = "",param3 = "",param2 = "";
         sortExcel(param1, param2, param3);
         });
     function RefreshTable() {
-        var param1 = "";
-        var param3 = "";
-        var param2 = "";
+        var param1 = "",param3 = "",param2 = "";
         sortExcel(param1, param2,param3);
+        document.getElementById("saveChanges").classList.add("editable");
+        document.getElementById("editBtn").classList.remove("editable");
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -250,7 +248,7 @@
         }
     }
 
-        function reapplyRowMapping() {
+     function reapplyRowMapping() {
         const rows = document.querySelectorAll(".table-div-body .div-table-row");
 
         rows.forEach((row, index) => {
@@ -279,6 +277,15 @@
 
         document.getElementById("saveChanges").classList.add("editable");
         document.getElementById("editBtn").classList.remove("editable");
+            const radioButtons = document.querySelectorAll('.radio-input input[type="radio"]');
+            radioButtons.forEach((radio) => {
+                radio.disabled = false;
+            });
+            const radioLabels = document.querySelectorAll('.radio-input label');
+            radioLabels.forEach((label) => {
+                label.style.cursor = "not-allowed"; // Prevent clicking on the labels
+            });
+
         const editDivs = document.querySelectorAll('#editDiv');
         editDivs.forEach((div) => {
             div.setAttribute('contenteditable', 'false');
@@ -293,7 +300,16 @@
               div.style.border = "1px dashed black";
             });
             document.getElementById("editBtn").classList.add("editable");
-            document.getElementById("saveChanges").classList.remove("editable");
+            document.getElementById("saveChanges").classList.remove("editable");   
+            const radioButtons = document.querySelectorAll('.radio-input input[type="radio"]');
+            radioButtons.forEach((radio) => {
+                radio.disabled = true;
+            });
+            const radioLabels = document.querySelectorAll('.radio-input label');
+            radioLabels.forEach((label) => {
+                label.style.cursor = "not-allowed"; // Prevent clicking on the labels
+            });
+
         }
 
     function sendData(fileid, fileName, updatedData, ogFileName) {
@@ -315,13 +331,14 @@
                     sortExcel("","","");
                     // location.reload();
 
-                } else {
+                } 
+                else {
                     alert(result.message);
                 }
             },
             error: function (xhr) {
                 alert("Error: " + xhr.responseText);
-                refreshTable();
+                sortExcel("","","");
             }
         });
     }

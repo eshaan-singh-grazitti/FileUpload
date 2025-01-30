@@ -281,7 +281,7 @@ namespace FileUpload.Controllers
 
             var sheet = workbook.GetSheetAt(0); // Get the first sheet
 
-            for (int rowIndex = 0; rowIndex <= sheet.LastRowNum; rowIndex++) // Assuming the first row is the header
+            for (int rowIndex = 1; rowIndex <= sheet.LastRowNum; rowIndex++) // Assuming the first row is the header
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var row = sheet.GetRow(rowIndex);
@@ -289,18 +289,19 @@ namespace FileUpload.Controllers
                 {
                     rows.Add(new RowsData
                     {
-                        RowId = rowIndex.ToString(),
+                        RowId = rowIndex,  // FIX: Convert int to string
                         UserId = userId,
                         FileId = fileid,
-                        Column1 = row.GetCell(0)?.ToString(),
-                        Column2 = row.GetCell(1)?.ToString(),
-                        Column3 = row.GetCell(2)?.ToString(),
-                        Column4 = row.GetCell(3)?.ToString(),
-                        Column5 = row.GetCell(4)?.ToString(),
-                        Column6 = row.GetCell(5)?.ToString()
+                        Segment = row.GetCell(0).ToString(),
+                        Country = row.GetCell(1).ToString(),
+                        Product = row.GetCell(2).ToString(),
+                        DiscountBand = row.GetCell(3).ToString(),
+                        UnitsSold = Convert.ToDecimal(row.GetCell(4).ToString()),
+                        ManufacturingPrice = Convert.ToInt32(row.GetCell(5).ToString())
                     });
                 }
             }
+
 
             return rows;
         }
@@ -323,31 +324,30 @@ namespace FileUpload.Controllers
             // Use the first row as headers
             var headers = new List<string>
             {
-
-                rows[0].RowId,
-                rows[0].Column1,
-                rows[0].Column2,
-                rows[0].Column3,
-                rows[0].Column4,
-                rows[0].Column5,
-                rows[0].Column6
+                "RowId",
+                "Segment",
+                "Country",
+                "Product",
+                "DiscountBand",
+                "UnitsSold",
+                "ManufacturingPrice"
             };
 
             // Process the remaining rows as data
             var data = new List<Dictionary<string, string>>();
-            for (int i = 1; i < rows.Count; i++)
+            for (int i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
                 var rowData = new Dictionary<string, string>
                 {
 
-                    { headers[0], row.RowId },
-                    { headers[1], row.Column1 },
-                    { headers[2], row.Column2 },
-                    { headers[3], row.Column3 },
-                    { headers[4], row.Column4 },
-                    { headers[5], row.Column5 },
-                    { headers[6], row.Column6 }
+                    { headers[0], row.RowId.ToString() },
+                    { headers[1], row.Segment },
+                    { headers[2], row.Country },
+                    { headers[3], row.Product },
+                    { headers[4], row.DiscountBand },
+                    { headers[5], row.UnitsSold.ToString() },
+                    { headers[6], row.ManufacturingPrice.ToString() }
                 };
                 data.Add(rowData);
             }
@@ -380,9 +380,18 @@ namespace FileUpload.Controllers
                         excelData = excelData.OrderBy(row =>
                         {
                             var value = row[sortColumn];
-                            // Handle values with symbols like "$" or non-numeric characters
-                            var cleanedValue = CleanNumericValue(value);
-                            return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
+                            // Check if the value contains symbols like $, ., or ,
+                            if (ContainsNumericSymbols(value))
+                            {
+                                var cleanedValue = CleanNumericValue(value);
+                                // Try to parse the cleaned value as numeric for sorting
+                                return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
+                            }
+                            else
+                            {
+                                // Sort as string if no numeric symbols are present
+                                return value as object;
+                            }
                         }).ToList();
                         DTO.DirectionValue = "Ascending";
                     }
@@ -391,12 +400,22 @@ namespace FileUpload.Controllers
                         excelData = excelData.OrderByDescending(row =>
                         {
                             var value = row[sortColumn];
-                            // Handle values with symbols like "$" or non-numeric characters
-                            var cleanedValue = CleanNumericValue(value);
-                            return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
+                            // Check if the value contains symbols like $, ., or ,
+                            if (ContainsNumericSymbols(value))
+                            {
+                                var cleanedValue = CleanNumericValue(value);
+                                // Try to parse the cleaned value as numeric for sorting
+                                return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
+                            }
+                            else
+                            {
+                                // Sort as string if no numeric symbols are present
+                                return value as object;
+                            }
                         }).ToList();
                         DTO.DirectionValue = "Descending";
                     }
+
                 }
                 catch (Exception ex)
                 {
@@ -409,6 +428,10 @@ namespace FileUpload.Controllers
 
             // Return the partial view with sorted data
             return PartialView("_PreviewExcel", DTO);
+        }
+        private bool ContainsNumericSymbols(string value)
+        {
+            return value.Contains("$") || value.Contains(".") || value.Contains(",");
         }
 
         private string CleanNumericValue(string value)
@@ -437,7 +460,6 @@ namespace FileUpload.Controllers
                 // Retrieve rows from RowsData table and order by rowid (ascending)
                 var rowsData = await _context.RowsData
                     .Where(r => r.FileId == data.Fileid)
-                    .OrderBy(r => r.RowId) // Sorting by RowId in ascending order
                     .ToListAsync();
 
                 if (!rowsData.Any())
@@ -448,6 +470,7 @@ namespace FileUpload.Controllers
                 var changes = new List<ExcelChanges>();
                 bool changeDetected = false;
 
+
                 // Process UpdatedData
                 for (int rowIndex = 1; rowIndex <= data.UpdatedData.Count; rowIndex++)
                 {
@@ -455,19 +478,53 @@ namespace FileUpload.Controllers
 
                     // Find the corresponding row based on rowid (matching by RowId)
                     var rowId = updatedRow[0]; // Assuming the rowId is the first key (or column) of the updated data
-                    var existingRow = rowsData.FirstOrDefault(r => r.RowId == rowId.ToString());
+                    var existingRow = rowsData.FirstOrDefault(r => r.RowId.ToString() == rowId);
 
                     if (existingRow == null)
                         continue;
-
+                    var columnMapping = new Dictionary<int, string>
+                        {
+                            { 1, "Segment" },
+                            { 2, "Country" },
+                            { 3, "Product" },
+                            { 4, "DiscountBand" },
+                            { 5, "UnitsSold" },
+                            { 6, "ManufacturingPrice" }
+                        };
                     for (int colIndex = 1; colIndex < updatedRow.Count; colIndex++)
                     {
-                        var columnProperty = $"Column{colIndex}";
+                        if (!columnMapping.TryGetValue(colIndex, out var columnProperty))
+                            continue;
                         var oldValue = typeof(RowsData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
-                        var newValue = updatedRow.ElementAt(colIndex);
+                        string newValue = updatedRow.ElementAt(colIndex)?.ToString();
+                        decimal newDataValue;
+                        if (colIndex == 5) // If it's a numeric column
+                        {
+                            if (decimal.TryParse(newValue, out decimal numericValue))
+                            {
+                                numericValue = Math.Round(numericValue, 2, MidpointRounding.AwayFromZero); // Round to 2 decimal places
+                                newValue = numericValue.ToString("F2"); // Format as string with 2 decimal places
+
+                            }
+                            else
+                            {
+                                return BadRequest(new { success = false, message = "Invalid numeric value." });
+                            }
+                        }
 
                         if (oldValue != newValue)
                         {
+                            if (newValue.Length > 50)
+                            {
+                                return BadRequest(new { success = false, message = "Maximum of 50 characters can be entered." });
+                            }
+
+
+
+                            if (!IsValidChangeFormat(oldValue, newValue))
+                            {
+                                return BadRequest(new { success = false, message = "Invalid format in new value." });
+                            }
                             changeDetected = true;
                             // Log the change
                             changes.Add(new ExcelChanges
@@ -482,29 +539,37 @@ namespace FileUpload.Controllers
                                 NewValue = newValue,
                                 ChangeDate = DateTime.Now
                             });
-
-                            // Update RowsData with new value
-                            typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
+                            if (colIndex == 5)
+                            {
+                                decimal newValueData = Convert.ToDecimal(newValue);
+                                typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValueData);
+                            }
+                            else
+                            {
+                                // Update RowsData with new value
+                                typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
+                            }
                         }
                     }
                 }
+
 
                 // Save changes to the database
                 await _context.ExcelChanges.AddRangeAsync(changes);
                 await _context.SaveChangesAsync();
 
                 // Sort the updated rows based on RowId in ascending order
-                rowsData = rowsData.OrderBy(r => r.RowId).ToList();
-
-                // Update the Excel file with sorted data
-                string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName);
-                UpdateExcelFile(filePath, rowsData);
 
                 if (changeDetected)
                 {
-                    return Ok(new { success = true, message = "Excel File Updated Successfully", data = DTO});
+                    rowsData = rowsData.OrderBy(r => r.RowId).ToList();
+
+                    // Update the Excel file with sorted data
+                    string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName);
+                    UpdateExcelFile(filePath, rowsData);
+                    return Ok(new { success = true, message = "Excel File Updated Successfully", data = DTO });
                 }
-                return Ok(new { success = true, message = "No changes Detected" });
+                return Ok(new { success = true, message = "No changes Detected", data = DTO });
             }
             catch (Exception ex)
             {
@@ -556,58 +621,44 @@ namespace FileUpload.Controllers
             }
         }
 
-        private string GetColumnFormat(List<string> columnValues)
+        private bool IsValidChangeFormat(string oldValue, string newValue)
         {
-            bool allNumeric = columnValues.All(value => decimal.TryParse(value.Replace("$", "").Replace(",", ""), out _));
-            bool allStrings = columnValues.All(value => value.All(c => char.IsLetter(c) || c == ' '));
-            bool mixedFormat = columnValues.Any(value => value.StartsWith("$")) || columnValues.Any(value => value.Contains("st") || value.Contains("nd") || value.Contains("rd") || value.Contains("th"));
+            // Check if the old value is numeric (allowing $ at the start and a single dot)
+            bool isOldValueNumeric = IsNumeric(oldValue);
 
-            if (allStrings)
+            if (isOldValueNumeric)
             {
-                return "string";
-            }
-            else if (allNumeric)
-            {
-                return "numeric";
-            }
-            else if (mixedFormat)
-            {
-                return "mixed";
+                // Ensure new value is also numeric (allowing $ at the start and a single dot)
+                return IsNumeric(newValue);
             }
             else
             {
-                return "unknown";
+                // Old value contains alphabets, new value can contain alphanumeric
+                return true; // Allow alphanumeric change
             }
         }
 
-        private bool ValidateInputFormat(string input, string columnFormat)
+        private bool IsNumeric(string value)
         {
-            if (columnFormat == "numeric")
-            {
-                return decimal.TryParse(input.Replace("$", "").Replace(",", ""), out _);
-            }
-            else if (columnFormat == "string")
-            {
-                return input.All(c => char.IsLetter(c) || c == ' ');
-            }
-            else if (columnFormat == "mixed")
-            {
-                // Check if the value starts with a dollar sign and is followed by a valid number (e.g., "$1", "$100.50")
-                bool isValidCurrency = input.StartsWith("$") && decimal.TryParse(input.Substring(1).Replace(",", ""), out _);
+            // Check if the value is numeric, handling $ at the start and a single dot
+            if (string.IsNullOrEmpty(value)) return false;
 
-                // Check if the value contains a number followed by a suffix (e.g., "1st", "2nd", "10th")
-                bool isValidMixed = System.Text.RegularExpressions.Regex.IsMatch(input, @"^\d+(st|nd|rd|th)$");
+            // Remove $ and check if it's numeric
+            string numericValue = value.Trim();
 
-                // Only allow if it's a valid currency or a valid mixed format (like "1st", "2nd")
-                return isValidCurrency || isValidMixed;
+            if (numericValue.StartsWith("$"))
+            {
+                numericValue = numericValue.Substring(1);
             }
 
-            else
+            // Allow only one dot in numeric value
+            if (numericValue.Count(c => c == '.') > 1)
             {
                 return false;
             }
-        }
 
+            return double.TryParse(numericValue, out _);
+        }
         public IActionResult Changes(int Id)
         {
             var file = _context.FileUploadModal.Find(Id);

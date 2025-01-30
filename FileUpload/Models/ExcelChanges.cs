@@ -38,7 +38,7 @@ namespace FileUpload.Models
         [Required]
         public DateTime ChangeDate { get; set; }
 
-        public bool isDeleted {  get; set; }
+        public bool isDeleted { get; set; }
 
     }
 }

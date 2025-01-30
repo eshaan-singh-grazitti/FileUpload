@@ -1,10 +1,8 @@
 ﻿using FileUpload.Data;
-using FileUpload.Controllers;
+using FileUpload.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using FileUpload.Models;
-using NPOI.HPSF;
 
 namespace FileUpload.Controllers
 {

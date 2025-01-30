@@ -120,7 +120,7 @@
             <table class="detail-table table table-striped align-middle text-center">
                 <thead class="table-dark">
                     <tr>
-                        @foreach (var column in Model.ExcelData[0].Keys.Where(c => c != "0")) // Exclude "0" column
+                        @foreach (var column in Model.ExcelData[0].Keys.Where(c => c != "RowId")) // Exclude "0" column
                         {
                             <th class="px-4 py-3 fw-bold border-end" style="min-width:9rem;">
                                 @column
@@ -132,7 +132,7 @@
                     @foreach (var row in Model.ExcelData.Select((value, index) => new { RowData = value, RowIndex = index + 1 })) // Get row index (0-based)
                     {
                         <tr class="table-row">
-                            @foreach (var cell in row.RowData.Where(kv => kv.Key != "0").Select((value, index) => new { CellValue = value.Value, ColumnIndex = index + 1 })) // Exclude "0" column
+                            @foreach (var cell in row.RowData.Where(kv => kv.Key != "RowId").Select((value, index) => new { CellValue = value.Value, ColumnIndex = index + 1 })) // Exclude "0" column
                             {
                                 bool isColChanged = Model.column.Contains(cell.ColumnIndex);
                                 bool isRowChanged = Model.row.Contains(row.RowIndex);

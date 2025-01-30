@@ -121,7 +121,7 @@
                         foreach (var column in Model.ExcelValue[0].Keys)
                         {
                             // Exclude the "0" header and hide it
-                            if (column == "0")
+                            if (column == "RowId")
                             {
                                 <!-- Hide the "0" column header -->
                                 <div class="div-table-data div-head table-dark" style="display: none;"></div>
@@ -157,11 +157,11 @@
                     {
                         <div class="div-table-row" data-row-id="@row.index">
                             <!-- Include and hide the "0" column data but keep it available for other functionalities -->
-                            @foreach (var cell in row.row.Where(kv => kv.Key == "0"))
+                            @foreach (var cell in row.row.Where(kv => kv.Key == "RowId"))
                             {
                                 <div class="div-table-data" style="display: none;" data-column="@cell.Key">@cell.Value</div>
                             }
-                            @foreach (var cell in row.row.Where(kv => kv.Key != "0"))
+                            @foreach (var cell in row.row.Where(kv => kv.Key != "RowId"))
                             {
                                 <div class="div-table-data" id="editDiv" style="padding: 8px;" contenteditable="false" data-column="@cell.Key">@cell.Value</div>
                             }

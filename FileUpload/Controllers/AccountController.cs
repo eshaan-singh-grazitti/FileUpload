@@ -95,7 +95,7 @@ namespace FileUpload.Controllers
         public async Task<IActionResult> Logout(string returnUrl = null)
         {
             await _signInManager.SignOutAsync();
-    
+
             return RedirectToAction("Index", "Home");  // Or redirect to any other page
         }
         [HttpGet]
