@@ -176,7 +176,7 @@ namespace FileUpload.Controllers
                             }
                         }
                         // Compress the file for thumbnails (no change in logic)
-                        if (fileExt != ".xls" && fileExt != ".xlsx")
+                        if (fileExt != ".xls" && fileExt != ".xlsx" && fileExt != ".zip")
                         {
                             if (fileExt == ".svg" || fileExt == ".webp")
                             {
