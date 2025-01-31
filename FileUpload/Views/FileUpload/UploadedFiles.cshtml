@@ -1,4 +1,4 @@
-﻿@model IEnumerable<FileUpload.Models.FileUploadModal>
+﻿@model IEnumerable<FileUpload.Models.UploadedFileInfo>
 @using Microsoft.AspNetCore.Identity;
 
 @inject UserManager<IdentityUser> UserManager
@@ -12,82 +12,82 @@
 
 <style>
     .DataGrid-Head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-        margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    margin-top: 1rem;
     }
 
     .go-to-top-btn {
-        position: fixed; /* Stays in a fixed position on the screen */
-        bottom: 70px; /* Distance from the bottom */
-        right: 50px; /* Distance from the right */
-        z-index: 1000; /* Ensures it stays above other elements */
-        padding: 10px 15px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 50px;
-        font-size: 14px;
-        cursor: pointer;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        opacity: 0; /* Initially hidden */
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
+    position: fixed; /* Stays in a fixed position on the screen */
+    bottom: 70px; /* Distance from the bottom */
+    right: 50px; /* Distance from the right */
+    z-index: 1000; /* Ensures it stays above other elements */
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    opacity: 0; /* Initially hidden */
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
     }
 
-        .go-to-top-btn:hover {
-            background-color: #0056b3;
-            transform: scale(1.1); /* Slight zoom effect on hover */
-        }
+    .go-to-top-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.1); /* Slight zoom effect on hover */
+    }
 
-        .go-to-top-btn.visible {
-            opacity: 1; /* Make the button visible */
-            visibility: visible; /* Ensure it's interactable */
-        }
+    .go-to-top-btn.visible {
+    opacity: 1; /* Make the button visible */
+    visibility: visible; /* Ensure it's interactable */
+    }
 
     .search {
-        display: flex;
-        position: relative;
-        margin-bottom: 1rem;
-        justify-content: center;
-        /* outline:2px solid black; */
+    display: flex;
+    position: relative;
+    margin-bottom: 1rem;
+    justify-content: center;
+    /* outline:2px solid black; */
     }
 
 
-        .search input[type="text"] {
-            width: 250px;
-            padding: 10px;
-            border: 2px solid black;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            outline: none;
-        }
+    .search input[type="text"] {
+    width: 250px;
+    padding: 10px;
+    border: 2px solid black;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    outline: none;
+    }
 
-            .search input[type="text"]:focus {
-                outline: none; /* Ensure no outline on focus */
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            }
+    .search input[type="text"]:focus {
+    outline: none; /* Ensure no outline on focus */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
 
 
     #noRecordsMessage {
-        display: none;
-        width: 100%;
+    display: none;
+    width: 100%;
     }
 
     .btn-icon {
-        font-size: 1.25rem; /* Adjust icon size */
+    font-size: 1.25rem; /* Adjust icon size */
     }
 
     .buttons {
-        display: flex;
-        justify-content: space-around;
+    display: flex;
+    justify-content: space-around;
     }
 
-        .buttons div {
-            width: 100%;
-        }
+    .buttons div {
+    width: 100%;
+    }
 
 </style>
 
@@ -161,16 +161,16 @@ else
                             {
                                 <img src="/Images/Excel-logo.jfif" style="max-width:80%" />
                             }
-                            else if(file.Extention == ".zip")
+                            else if (file.Extention == ".zip")
                             {
-                                <img src="/Images/Zip-Icon.png" style="max-width:80%"/>
+                                <img src="/Images/Zip-Icon.png" style="max-width:80%" />
                             }
                             else
                             {
-                                <img src="/CompressedUploads/@file.Filename" style="max-width:100%" />
+                                <img src="/CompressedUploads/@file.FilenameWithTimeStamp" style="max-width:100%" />
                             }
                         </td>
-                        <td>@file.OriginalFilename</td>
+                        <td>@file.FileName</td>
                         <td>@file.FileSize KB</td>
                         <td>@file.FileType</td>
                         <td>@file.UploadedOn.ToString("g")</td>
@@ -181,7 +181,14 @@ else
                                 @{
                                     var user = await UserManager.FindByIdAsync(file.UserId);
                                 }
-                                @(user.UserName ?? "Unknown")
+                                @if (user != null)
+                                {
+                                    @(user.UserName ?? "Unknown")
+                                }
+                                else
+                                {
+                                    @("Unknown")
+                                }
                             </td>
                             @if (file.IsDeleted)
                             {

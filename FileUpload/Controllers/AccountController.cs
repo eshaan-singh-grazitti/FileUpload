@@ -75,11 +75,11 @@ namespace FileUpload.Controllers
                         if (role == "Admin")
                         {
                             // Redirect to User page
-                            return RedirectToAction("AdminDashboard", "Secure");
+                            return RedirectToAction("AdminDashboard", "Dashboard");
                         }
                         else
                         {
-                            return RedirectToAction("UserDashboard", "Secure");
+                            return RedirectToAction("UserDashboard", "Dashboard");
                         }
                     }
 
@@ -92,7 +92,7 @@ namespace FileUpload.Controllers
             ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             return View();
         }
-        public async Task<IActionResult> Logout(string returnUrl = null)
+        public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
 

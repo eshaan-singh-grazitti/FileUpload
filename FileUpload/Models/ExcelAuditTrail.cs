@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FileUpload.Models
 {
-    public class ExcelChanges
+    public class ExcelAuditTrail
     {
         [Key]
         public int Id { get; set; }
@@ -21,7 +21,7 @@ namespace FileUpload.Models
 
         // Navigation property for the related FileUpload
         [ForeignKey("FileId")]
-        public FileUploadModal FileUpload { get; set; } = null!;
+        public UploadedFileInfo FileUpload { get; set; } = null!;
 
         [Required]
         public int Row { get; set; }

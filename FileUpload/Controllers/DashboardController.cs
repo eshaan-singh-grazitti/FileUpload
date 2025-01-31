@@ -6,25 +6,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FileUpload.Controllers
 {
-    public class SecureController : Controller
+    public class DashboardController : Controller
     {
         private readonly AppDbContext _context;
-        //DataTransferModel DTO = new DataTransferModel();
-        ExcelChangesViewModel DTO = new ExcelChangesViewModel();
-        public SecureController(AppDbContext context)
+        public DashboardController(AppDbContext context)
         {
             _context = context;
         }
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdminDashboard()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
 
             //var data = await _context.ExcelChanges.ToListAsync();
-            var data = await _context.ExcelChanges
+            var data = await _context.ExcelAuditTrail
                 .GroupBy(f => new { f.FileName, f.UserName }) // Group by FileName and UserName
                 .Select(g => g.OrderBy(f => f.ChangeDate).FirstOrDefault()) // Select the latest record in each group
                 .ToListAsync();
@@ -33,7 +31,7 @@ namespace FileUpload.Controllers
         [Authorize(Roles = "User,Admin")]
         public IActionResult UserDashboard()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }

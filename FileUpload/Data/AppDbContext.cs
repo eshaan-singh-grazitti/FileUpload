@@ -11,9 +11,9 @@ namespace FileUpload.Data
         {
 
         }
-        public DbSet<FileUploadModal> FileUploadModal { get; set; }
-        public DbSet<ExcelChanges> ExcelChanges { get; set; }
-        public DbSet<RowsData> RowsData { get; set; }
+        public DbSet<UploadedFileInfo> UploadedFileInfo { get; set; } = null!;
+        public DbSet<ExcelAuditTrail> ExcelAuditTrail { get; set; } = null!;
+        public DbSet<ExcelSheetData> ExcelSheetData { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

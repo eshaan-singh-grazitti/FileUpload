@@ -9,74 +9,74 @@
 
 <style>
     .table-main-div {
-        max-width: 80vw;
-        max-height: 80vh;
-        overflow: auto;
+    max-width: 80vw;
+    max-height: 80vh;
+    overflow: auto;
     }
 
     .header-div {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     }
 
     .table-main-div {
-        background: #f9f9f9;
-        padding: 20px;
-        border-radius: 8px;
-        border: 2px solid black;
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid black;
     }
 
 
 
     .detail-table {
-        border-collapse: separate;
-        border-spacing: 0;
+    border-collapse: separate;
+    border-spacing: 0;
     }
 
-        .detail-table th {
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+    .detail-table th {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    }
 
-        .detail-table td {
-            vertical-align: middle;
-        }
+    .detail-table td {
+    vertical-align: middle;
+    }
 
     .alert {
-        font-size: 1.2rem;
+    font-size: 1.2rem;
     }
 
     .overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
     }
 
     .overlay-content {
-        background: #ffffff;
-        border-radius: 8px;
-        padding: 20px;
-        width: 80vw;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        overflow-y: auto;
-        max-height: 90%;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    width: 80vw;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+    max-height: 90%;
     }
 
     .hidden {
-        display: none;
+    display: none;
     }
 
     #showChangesButton {
-        display: block;
-        margin: auto;
+    display: block;
+    margin: auto;
     }
 
     .overlay-btn {
@@ -96,7 +96,7 @@
         <div class="overlay-btn d-flex flex-row-reverse">
             <button id="closeOverlayButton" class="btn btn-danger mb-2">Close</button>
         </div>
-        <partial name="_ChangesTable.cshtml" />
+        <partial name="_AuditLogsPartial.cshtml" />
     </div>
 </div>
 
@@ -109,7 +109,7 @@
         <button id="showChangesButton" class="btn btn-primary">
             Show Changes
         </button>
-        <a asp-action="AdminDashboard" asp-controller="Secure" class="btn btn-primary ">Admin Dashboard</a>
+        <a asp-action="AdminDashboard" asp-controller="Dashboard" class="btn btn-primary ">Admin Dashboard</a>
     </div>
 </div>
 
@@ -137,13 +137,12 @@
                                 bool isColChanged = Model.column.Contains(cell.ColumnIndex);
                                 bool isRowChanged = Model.row.Contains(row.RowIndex);
 
-                                int rIndex = row.RowIndex + 1;
-                                int cIndex = cell.ColumnIndex + 1;
-
                                 if (isRowChanged && isColChanged)
                                 {
+                                    var DataFromRow = row.RowData.ToList();
+
                                     var dataFromDb = Model.ExcelChangesData
-                                    .Where(a => a.Row == row.RowIndex && a.Column == cell.ColumnIndex)
+                                    .Where(a => a.Row == Convert.ToInt32(DataFromRow[0].Value) && a.Column == cell.ColumnIndex)
                                     .OrderByDescending(u => u.ChangeDate)
                                     .FirstOrDefault();
 

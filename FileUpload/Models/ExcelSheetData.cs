@@ -3,20 +3,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FileUpload.Models
 {
-    public class RowsData
+    public class ExcelSheetData
     {
         [Key]
         public int Id { get; set; }
-        public int RowId { get; set; }
-        public string Segment { get; set; }
-        public string Country { get; set; }
-        public string Product { get; set; }
-        public string DiscountBand { get; set; }
+        public string Segment { get; set; } = null!;
+        public string Country { get; set; } = null!;
+        public string Product { get; set; } = null!;
+        public string DiscountBand { get; set; } = null!;
         public decimal UnitsSold { get; set; }
         public int ManufacturingPrice { get; set; }
         public string UserId { get; set; } = null!;
         public int FileId { get; set; }
         [ForeignKey("FileId")]
-        public FileUploadModal FileUpload { get; set; } = null!;
+        public UploadedFileInfo FileUpload { get; set; } = null!;
     }
 }

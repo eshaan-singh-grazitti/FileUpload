@@ -1,4 +1,4 @@
-﻿@model FileUpload.Models.FileUploadModal
+﻿@model FileUpload.Models.UploadedFileInfo
 
 @{
     ViewData["Title"] = "File Details";
@@ -86,7 +86,7 @@
     }
 </style>
 
-<h1>@Model.OriginalFilename's Details</h1>
+<h1>@Model.FileName's Details</h1>
 
 <div class="card">
     <div class="card-header">
@@ -112,7 +112,7 @@
             if (!Model.IsDeleted)
             {
 
-                <button class="btn btn-warning btna" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
+                <button class="btn btn-warning btna mb-2" id="editBtn" onclick="hideEditBtn()">Edit Table</button>
                 <button id="saveChanges" class="btn btn-primary editable btna">Save Changes</button>
             }
 
@@ -126,18 +126,18 @@
             </div>
             <div class="img-div" id="image-container">
                 <a href="#fullscreen">
-                    <img src="/Uploads/@Model.Filename" id="uploaded-image" alt="Uploaded Image" class="thumbnail" style="max-width: auto; height: 60vh;display:none; " />
+                    <img src="/Uploads/@Model.FilenameWithTimeStamp" id="uploaded-image" alt="Uploaded Image" class="thumbnail" style="max-width: auto; height: 60vh;display:none; " />
                 </a>
             </div>
             <div id="fullscreen">
                 <div class="fullscreen-overlay">
                     <a asp-action="Details" asp-route-id="@Model.Id" asp-controller="FileUpload" class="close-btn ">Close</a>
-                    <img src="/Uploads/@Model.Filename" alt="Fullscreen Image" class="fullscreen-img">
+                    <img src="/Uploads/@Model.FilenameWithTimeStamp" alt="Fullscreen Image" class="fullscreen-img">
                 </div>
             </div>
 
         }
-
+        
         <p><strong>File Type:</strong> @Model.FileType</p>
         <p><strong>Uploaded On:</strong> @Model.UploadedOn.ToString("f")</p>
         <p><strong>File Size:</strong> @Model.FileSize KB</p>
@@ -147,7 +147,7 @@
 <div class="mt-3">
     <a asp-action="Download" asp-route-id="@Model.Id" class="btn btn-info">Download</a>
     <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = Model.Id })')" class="btn btn-danger">Delete</a>
-    <a asp-action="DataGrid" class="btn btn-dark">Back to List</a>
+    <a asp-action="UploadedFiles" class="btn btn-dark">Back to List</a>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
@@ -200,7 +200,7 @@
             url: '@Url.Action("LoadExcelPreview", "FileUpload")',
             type: 'POST',
             data: {
-                fileId: @Model.Id,
+                fileId: "@Model.Id",
                 sortColumn: column,
                 sortDirection: direction
             },
@@ -270,9 +270,9 @@
             if (rowData.length > 0) updatedData.push(rowData);
         });
 
-        const fileName = '@Model.Filename';
+        const fileName = '@Model.FilenameWithTimeStamp';
         const fileid = '@Model.Id';
-        const ogFileName = '@Model.OriginalFilename';
+        const ogFileName = '@Model.FileName';
         sendData(fileid, fileName, updatedData, ogFileName);
 
         document.getElementById("saveChanges").classList.add("editable");

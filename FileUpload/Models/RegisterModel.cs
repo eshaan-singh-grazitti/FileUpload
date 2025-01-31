@@ -7,14 +7,14 @@ namespace FileUpload.Models
         [Required]
         [StringLength(51, ErrorMessage = "The username cannot exceed 50 characters.")]
         [RegularExpression(@"^(?=.*[a-zA-Z])[a-zA-Z0-9_]+$", ErrorMessage = "Username must contain at least one letter and can only include letters, numbers, and underscores.")]
-        public string UserName { get; set; }
+        public string UserName { get; set; } = null!;
 
         [Required]
         [EmailAddress(ErrorMessage = "Invalid email address.")]
-        public string Email { get; set; }
+        public string Email { get; set; } = null!;
 
         [Required]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public string Password { get; set; } = null!;
     }
 }

@@ -2,6 +2,7 @@
 using FileUpload.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
@@ -28,25 +29,24 @@ namespace FileUpload.Controllers
 
         public async Task<IActionResult> Index()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
 
             TempData["message"] = ViewBag.Message;
-            var files = await _context.FileUploadModal.ToListAsync();
+            var files = await _context.UploadedFileInfo.ToListAsync();
             return View(files);
         }
         [HttpGet]
-        public async Task<IActionResult> DataGrid()
+        public async Task<IActionResult> UploadedFiles()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get logged-in user ID
-
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;// Get logged-in user ID
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
@@ -57,7 +57,7 @@ namespace FileUpload.Controllers
                 bool isInRole = await _userManager.IsInRoleAsync(user, "User");
                 if (isInRole)
                 {
-                    var userFiles = await _context.FileUploadModal
+                    var userFiles = await _context.UploadedFileInfo
                         .Where(f => f.UserId == userId)
                         .Where(f => f.IsDeleted == false)
                         .OrderByDescending(f => f.UploadedOn)
@@ -67,7 +67,7 @@ namespace FileUpload.Controllers
                 }
                 else
                 {
-                    return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                    return View("UploadedFiles", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                 }
             }
 
@@ -88,7 +88,7 @@ namespace FileUpload.Controllers
                     if (!System.Array.Exists(ext, e => e == fileExt))
                     {
                         ViewBag.Message = $"*Invalid file extension: {fileExt}. Allowed types are {string.Join(", ", ext)}.";
-                        return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                        return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                     }
 
                     string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -110,7 +110,19 @@ namespace FileUpload.Controllers
                         await file.CopyToAsync(tempStream);
                     }
 
-                    string globalPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName).FullName, "Uploaded Folder", fileName);
+                    string? baseDirectory = Directory.GetCurrentDirectory();
+                    string? parent1 = Directory.GetParent(baseDirectory)?.FullName;
+                    string? parent2 = Directory.GetParent(parent1 ?? "")?.FullName;
+                    string? parent3 = Directory.GetParent(parent2 ?? "")?.FullName;
+
+                    if (parent3 == null)
+                    {
+                        throw new InvalidOperationException("Cannot determine the base directory.");
+                    }
+
+                    string globalPath = Path.Combine(parent3, "Uploaded Folder", fileName);
+
+                    //string globalPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName).FullName, "Uploaded Folder", fileName);
                     // If all chunks are uploaded, merge them in parallel
                     if (chunkIndex + 1 == totalChunks)
                     {
@@ -156,7 +168,7 @@ namespace FileUpload.Controllers
                                 {
                                     System.IO.File.Delete(finalPath);
                                     ViewBag.Message = "*Excel file is empty.";
-                                    return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                                    return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                                 }
 
                             }
@@ -172,7 +184,7 @@ namespace FileUpload.Controllers
                             {
                                 System.IO.File.Delete(finalPath);
                                 ViewBag.Message = "*Excel file is empty.";
-                                return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                                return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                             }
                         }
                         // Compress the file for thumbnails (no change in logic)
@@ -211,12 +223,16 @@ namespace FileUpload.Controllers
                         double fileSizeInKB = fileSizeInBytes / 1024;
                         double fileSize = Math.Round(fileSizeInKB, 2);
                         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                        var fileUploadModal = new FileUploadModal
+                        if (string.IsNullOrEmpty(userId))
                         {
-                            OriginalFilename = originalFileName + fileExt,
-                            Filename = fileName,
+                            return BadRequest("User ID not found."); // Handle as needed
+                        }
+                        var fileUploadModal = new UploadedFileInfo
+                        {
+                            FileName = originalFileName + fileExt,
+                            FilenameWithTimeStamp = fileName,
                             FileType = file.ContentType,
-                            Data = globalPath,
+                            FilePathOutsideProject = globalPath,
                             FileSize = fileSize,
                             CompressedPath = compressedFilePath,
                             Extention = fileExt,
@@ -224,7 +240,7 @@ namespace FileUpload.Controllers
                             UserId = userId,
                             IsDeleted = false
                         };
-                        _context.FileUploadModal.Add(fileUploadModal);
+                        _context.UploadedFileInfo.Add(fileUploadModal);
                         await _context.SaveChangesAsync();
                         if (fileExt == ".xls" || fileExt == ".xlsx")
                         {
@@ -237,7 +253,7 @@ namespace FileUpload.Controllers
                                 var rows = ProcessExcelFile(stream, fileExt, fileUploadModal.Id);
 
                                 // Save rows to the database
-                                _context.RowsData.AddRange(rows);
+                                _context.ExcelSheetData.AddRange(rows);
                                 await _context.SaveChangesAsync();
                             }
 
@@ -249,7 +265,7 @@ namespace FileUpload.Controllers
                         ViewBag.MessageSuccess = $"Chunk {chunkIndex + 1}/{totalChunks} uploaded successfully.";
                     }
 
-                    return View("Index", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                    return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                 }
                 else
                 {
@@ -265,9 +281,9 @@ namespace FileUpload.Controllers
             return RedirectToAction("Index");
         }
 
-        private List<RowsData> ProcessExcelFile(Stream fileStream, string fileExt, int fileid)
+        private List<ExcelSheetData> ProcessExcelFile(Stream fileStream, string fileExt, int fileid)
         {
-            var rows = new List<RowsData>();
+            var rows = new List<ExcelSheetData>();
 
             IWorkbook workbook;
             if (fileExt == ".xls")
@@ -283,19 +299,18 @@ namespace FileUpload.Controllers
 
             for (int rowIndex = 1; rowIndex <= sheet.LastRowNum; rowIndex++) // Assuming the first row is the header
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
                 var row = sheet.GetRow(rowIndex);
                 if (row != null)
                 {
-                    rows.Add(new RowsData
+                    rows.Add(new ExcelSheetData
                     {
-                        RowId = rowIndex,  // FIX: Convert int to string
                         UserId = userId,
                         FileId = fileid,
-                        Segment = row.GetCell(0).ToString(),
-                        Country = row.GetCell(1).ToString(),
-                        Product = row.GetCell(2).ToString(),
-                        DiscountBand = row.GetCell(3).ToString(),
+                        Segment = row.GetCell(0).ToString() ?? string.Empty,
+                        Country = row.GetCell(1).ToString() ?? string.Empty,
+                        Product = row.GetCell(2).ToString() ?? string.Empty,
+                        DiscountBand = row.GetCell(3).ToString() ?? string.Empty,
                         UnitsSold = Convert.ToDecimal(row.GetCell(4).ToString()),
                         ManufacturingPrice = Convert.ToInt32(row.GetCell(5).ToString())
                     });
@@ -312,7 +327,7 @@ namespace FileUpload.Controllers
                 throw new ArgumentException("Invalid file ID.");
 
             // Fetch rows from the database for the given file ID
-            var rows = _context.RowsData
+            var rows = _context.ExcelSheetData
                 .Where(r => r.FileId == fileId)
                 .OrderBy(o => o.Id)
                 .ToList();
@@ -341,7 +356,7 @@ namespace FileUpload.Controllers
                 var rowData = new Dictionary<string, string>
                 {
 
-                    { headers[0], row.RowId.ToString() },
+                    { headers[0], row.Id.ToString() },
                     { headers[1], row.Segment },
                     { headers[2], row.Country },
                     { headers[3], row.Product },
@@ -358,13 +373,13 @@ namespace FileUpload.Controllers
         [HttpPost]
         public IActionResult LoadExcelPreview(int fileId, string sortColumn, string sortDirection)
         {
-            var file = _context.FileUploadModal.Find(fileId);
+            var file = _context.UploadedFileInfo.Find(fileId);
             if (file == null)
             {
                 return BadRequest("File Not Found");
             }
 
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.FilenameWithTimeStamp);
             //var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             // Get the Excel data
@@ -450,15 +465,20 @@ namespace FileUpload.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveUpdatedExcel([FromBody] DataRequest data)
+        public async Task<IActionResult> SaveUpdatedExcel([FromBody] ExcelEditRequestModel data)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userName = User.Identity.Name;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID not found."); // Handle as needed
+            }
+            var userName = User?.Identity?.Name ?? "Unknown User";
+
 
             try
             {
-                // Retrieve rows from RowsData table and order by rowid (ascending)
-                var rowsData = await _context.RowsData
+                // Retrieve rows from ExcelSheetData table and order by rowid (ascending)
+                var rowsData = await _context.ExcelSheetData
                     .Where(r => r.FileId == data.Fileid)
                     .ToListAsync();
 
@@ -467,7 +487,7 @@ namespace FileUpload.Controllers
                     return BadRequest(new { success = false, message = "No rows found for the given FileId." });
                 }
 
-                var changes = new List<ExcelChanges>();
+                var changes = new List<ExcelAuditTrail>();
                 bool changeDetected = false;
 
 
@@ -478,7 +498,7 @@ namespace FileUpload.Controllers
 
                     // Find the corresponding row based on rowid (matching by RowId)
                     var rowId = updatedRow[0]; // Assuming the rowId is the first key (or column) of the updated data
-                    var existingRow = rowsData.FirstOrDefault(r => r.RowId.ToString() == rowId);
+                    var existingRow = rowsData.FirstOrDefault(r => r.Id.ToString() == rowId);
 
                     if (existingRow == null)
                         continue;
@@ -495,9 +515,12 @@ namespace FileUpload.Controllers
                     {
                         if (!columnMapping.TryGetValue(colIndex, out var columnProperty))
                             continue;
-                        var oldValue = typeof(RowsData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
+                        var oldValue = typeof(ExcelSheetData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
                         string newValue = updatedRow.ElementAt(colIndex)?.ToString();
-                        decimal newDataValue;
+                        if(newValue == null || oldValue == null)
+                        {
+                            return BadRequest("Value is null");
+                        }
                         if (colIndex == 5) // If it's a numeric column
                         {
                             if (decimal.TryParse(newValue, out decimal numericValue))
@@ -527,7 +550,7 @@ namespace FileUpload.Controllers
                             }
                             changeDetected = true;
                             // Log the change
-                            changes.Add(new ExcelChanges
+                            changes.Add(new ExcelAuditTrail
                             {
                                 UserName = userName,
                                 UserID = userId,
@@ -542,12 +565,12 @@ namespace FileUpload.Controllers
                             if (colIndex == 5)
                             {
                                 decimal newValueData = Convert.ToDecimal(newValue);
-                                typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValueData);
+                                typeof(ExcelSheetData).GetProperty(columnProperty)?.SetValue(existingRow, newValueData);
                             }
                             else
                             {
                                 // Update RowsData with new value
-                                typeof(RowsData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
+                                typeof(ExcelSheetData).GetProperty(columnProperty)?.SetValue(existingRow, newValue);
                             }
                         }
                     }
@@ -555,14 +578,14 @@ namespace FileUpload.Controllers
 
 
                 // Save changes to the database
-                await _context.ExcelChanges.AddRangeAsync(changes);
+                await _context.ExcelAuditTrail.AddRangeAsync(changes);
                 await _context.SaveChangesAsync();
 
                 // Sort the updated rows based on RowId in ascending order
 
                 if (changeDetected)
                 {
-                    rowsData = rowsData.OrderBy(r => r.RowId).ToList();
+                    rowsData = rowsData.OrderBy(r => r.Id).ToList();
 
                     // Update the Excel file with sorted data
                     string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", data.FileName);
@@ -577,7 +600,7 @@ namespace FileUpload.Controllers
             }
         }
 
-        private void UpdateExcelFile(string filePath, List<RowsData> updatedData)
+        private void UpdateExcelFile(string filePath, List<ExcelSheetData> updatedData)
         {
             IWorkbook workbook;
 
@@ -606,7 +629,7 @@ namespace FileUpload.Controllers
                 for (int colIndex = 1; colIndex <= 6; colIndex++) // Start from column 1 (Column1)
                 {
                     // Get the corresponding value from the updatedRow
-                    var columnValue = typeof(RowsData).GetProperty($"Column{colIndex}")?.GetValue(updatedRow)?.ToString();
+                    var columnValue = typeof(ExcelSheetData).GetProperty($"Column{colIndex}")?.GetValue(updatedRow)?.ToString();
 
                     // Set the cell value in the Excel sheet
                     var cell = excelRow.GetCell(colIndex - 1);
@@ -661,19 +684,23 @@ namespace FileUpload.Controllers
         }
         public IActionResult Changes(int Id)
         {
-            var file = _context.FileUploadModal.Find(Id);
-            var file1 = _context.ExcelChanges
+            var file = _context.UploadedFileInfo.Find(Id);
+            if (file == null)
+            {
+                return NotFound("File Not Found");
+            }
+            var file1 = _context.ExcelAuditTrail
                 .Where(f => f.FileId == Id)
                 .GroupBy(f => new { f.FileName, f.UserID })
                 .Select(g => g
                 .OrderBy(f => f.Id)
                 .ToList())
                 .FirstOrDefault();
-            var rowIds = _context.RowsData
-                     .Select(r => r.RowId)
+            var rowIds = _context.ExcelSheetData
+                     .Select(r => r.Id)
                      .ToList();
 
-            var filename = file.Filename;
+            var filename = file.FilenameWithTimeStamp;
             string fileExt = Path.GetExtension(filename).ToLower();
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", filename);
 
@@ -686,13 +713,13 @@ namespace FileUpload.Controllers
                     ExcelData = PreviewExcel(file.Id),
                     row = new List<int>(),
                     column = new List<int>(),
-                    ExcelChangesData = new List<ExcelChanges>(),
+                    ExcelChangesData = new List<ExcelAuditTrail>(),
                     isDeleted = file.IsDeleted,
                     DeletedBy = file.DeletedBy,
                     deteleTime = file.DeleteTime
                 };
 
-                for (var i = 1; i < rowIds.Count; i++)
+                for (var i = 0; i < rowIds.Count; i++)
                 {
                     EXM.row.Add(Convert.ToInt32(rowIds[i]));
                 }
@@ -703,17 +730,21 @@ namespace FileUpload.Controllers
                     EXM.ExcelChangesData.Add(file1[i]);
                 }
             }
+            else
+            {
+                return NotFound("File Not Found");
+            }
 
             return View(EXM);
         }
         public async Task<IActionResult> Details(int id)
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
 
-            var file = await _context.FileUploadModal.FindAsync(id);
+            var file = await _context.UploadedFileInfo.FindAsync(id);
             if (file == null)
             {
                 return BadRequest("File Not Found");
@@ -724,26 +755,35 @@ namespace FileUpload.Controllers
 
         public async Task<IActionResult> Download(int id)
         {
-            var file = await _context.FileUploadModal.FindAsync(id);
+            var file = await _context.UploadedFileInfo.FindAsync(id);
 
             if (file == null)
             {
                 return NotFound();
             }
-            string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.Filename);
+            string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.FilenameWithTimeStamp);
             //string finalPath = file.Data;
             var fileBytes = await System.IO.File.ReadAllBytesAsync(finalPath);
 
-            return File(fileBytes, file.FileType, file.OriginalFilename);
+            return File(fileBytes, file.FileType, file.FileName);
         }
 
         public async Task<IActionResult> Delete(int id)
         {
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID not found."); // Handle as needed
+            }
             var user = await _userManager.FindByIdAsync(userId);
+            
+            if (user == null)
+            {
+                return BadRequest("User not found."); // Handle as needed
+            }
 
-            var file = await _context.FileUploadModal.FindAsync(id);
+            var file = await _context.UploadedFileInfo.FindAsync(id);
 
             if (file != null)
             {
@@ -760,7 +800,7 @@ namespace FileUpload.Controllers
                 if (file.Extention == ".xls" || file.Extention == ".xlsx")
                 {
 
-                    var data = await _context.ExcelChanges.FirstOrDefaultAsync(f => f.FileId == id);
+                    var data = await _context.ExcelAuditTrail.FirstOrDefaultAsync(f => f.FileId == id);
                     if (data != null) data.isDeleted = true;
 
                 }
@@ -771,17 +811,17 @@ namespace FileUpload.Controllers
             bool isInRole = await _userManager.IsInRoleAsync(user, "User");
             if (isInRole)
             {
-                var userFiles = await _context.FileUploadModal
+                var userFiles = await _context.UploadedFileInfo
                     .Where(f => f.UserId == userId)
                     .Where(a => a.IsDeleted == false)
                     .OrderByDescending(f => f.UploadedOn)
                     .ToListAsync();
 
-                return View("DataGrid", userFiles);
+                return View("UploadedFiles", userFiles);
             }
             else
             {
-                return View("DataGrid", _context.FileUploadModal.OrderByDescending(f => f.UploadedOn).ToList());
+                return View("UploadedFiles", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
             }
         }
 

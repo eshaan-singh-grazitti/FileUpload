@@ -2,22 +2,22 @@
 
 namespace FileUpload.Models
 {
-    public class FileUploadModal
+    public class UploadedFileInfo
     {
         [Key]
         public int Id { get; set; }
 
         [Required]
-        public string OriginalFilename { get; set; } = null!;
+        public string FileName { get; set; } = null!;
 
         [Required]
-        public string Filename { get; set; } = null!;
+        public string FilenameWithTimeStamp { get; set; } = null!;
 
         [Required]
         public string FileType { get; set; } = null!;
 
         [Required]
-        public string Data { get; set; } = null!;
+        public string FilePathOutsideProject { get; set; } = null!;
 
         public double FileSize { get; set; }
 
@@ -31,11 +31,11 @@ namespace FileUpload.Models
         public DateTime UploadedOn { get; set; }
 
         [Required]
-        public string UserId { get; set; }
+        public string UserId { get; set; } = null!;
         public bool IsDeleted { get; set; }
         public string? DeletedBy { get; set; }
         public DateTime? DeleteTime { get; set; }
         // Navigation property for related ExcelChanges
-        public ICollection<ExcelChanges> ExcelChanges { get; set; } = new List<ExcelChanges>();
+        public ICollection<ExcelAuditTrail> ExcelChanges { get; set; } = new List<ExcelAuditTrail>();
     }
 }
