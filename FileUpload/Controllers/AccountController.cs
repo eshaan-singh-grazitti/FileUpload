@@ -1,4 +1,6 @@
 ﻿using FileUpload.Models;
+using FileUpload.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +11,14 @@ namespace FileUpload.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly JwtService _jwtService;
 
-        public AccountController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, SignInManager<IdentityUser> signInManager)
+        public AccountController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, SignInManager<IdentityUser> signInManager, JwtService jwtService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _signInManager = signInManager;
+            _jwtService = jwtService;
         }
         [HttpGet]
         public IActionResult Register()
@@ -54,6 +58,7 @@ namespace FileUpload.Controllers
             return View();
         }
         [ValidateAntiForgeryToken]
+        [HttpPost]
         public async Task<IActionResult> Login(LoginModel model)
         {
             if (!ModelState.IsValid)
@@ -68,34 +73,43 @@ namespace FileUpload.Controllers
                 var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, false);
                 if (result.Succeeded)
                 {
+                    var username = user.UserName ?? "UnknownUser";
+                    var token = _jwtService.GenerateJwtToken(user.Id, username);
+                    Response.Cookies.Append("JwtToken", token, new CookieOptions
+                    {
+                        HttpOnly = true,  // Ensure it cannot be accessed via JavaScript
+                        Secure = true,    // Ensure it's only sent over HTTPS
+                        Expires = DateTime.UtcNow.AddMinutes(20) // Set expiration (optional)
+                    });
+
                     var roleUser = await _userManager.GetRolesAsync(user);
                     if (roleUser.Count == 1)
                     {
+                        // Check user role and redirect accordingly
                         var role = roleUser[0];
                         if (role == "Admin")
                         {
-                            // Redirect to User page
-                            return RedirectToAction("AdminDashboard", "Dashboard");
+                            // Pass token along with the redirect URL (or use it in your API for admin dashboard)
+                            return RedirectToAction("AdminDashboard", "Dashboard", new { token });
                         }
                         else
                         {
-                            return RedirectToAction("UserDashboard", "Dashboard");
+                            return RedirectToAction("UserDashboard", "Dashboard", new { token });
                         }
                     }
-
                 }
                 ModelState.AddModelError(string.Empty, "Invalid Password");
                 return View(model);
-
             }
 
             ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             return View();
         }
+
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-
+            Response.Cookies.Delete("JwtToken");
             return RedirectToAction("Index", "Home");  // Or redirect to any other page
         }
         [HttpGet]

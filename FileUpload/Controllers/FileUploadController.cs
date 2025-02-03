@@ -1,14 +1,17 @@
 ﻿using FileUpload.Data;
 using FileUpload.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using OfficeOpenXml;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 
@@ -26,18 +29,37 @@ namespace FileUpload.Controllers
             _context = context;
             _userManager = userManager;
         }
-
+        [Authorize]
         public async Task<IActionResult> Index()
         {
             if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
+            var handler = new JwtSecurityTokenHandler();
+            try
+            {
+                var token = Request.Cookies["JwtToken"];
+                var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            TempData["message"] = ViewBag.Message;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Logout", "Account");
+                }
+            }
+            catch(Exception)
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+
+                TempData["message"] = ViewBag.Message;
             var files = await _context.UploadedFileInfo.ToListAsync();
             return View(files);
         }
+
+
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> UploadedFiles()
         {
@@ -45,231 +67,262 @@ namespace FileUpload.Controllers
             {
                 return RedirectToAction("Login", "Account");
             }
+            var handler = new JwtSecurityTokenHandler();
+            try
+            {
+                var token = Request.Cookies["JwtToken"];
+                var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;// Get logged-in user ID
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return RedirectToAction("Login", "Account");
-            }
-            else
-            {
-                bool isInRole = await _userManager.IsInRoleAsync(user, "User");
-                if (isInRole)
+                if (string.IsNullOrEmpty(userId))
                 {
-                    var userFiles = await _context.UploadedFileInfo
-                        .Where(f => f.UserId == userId)
-                        .Where(f => f.IsDeleted == false)
-                        .OrderByDescending(f => f.UploadedOn)
-                        .ToListAsync();
-
-                    return View(userFiles);
+                    return Unauthorized();  // Handle invalid token
+                }
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return RedirectToAction("Login", "Account");
                 }
                 else
                 {
-                    return View("UploadedFiles", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
+                    bool isInRole = await _userManager.IsInRoleAsync(user, "User");
+                    if (isInRole)
+                    {
+                        var userFiles = await _context.UploadedFileInfo
+                            .Where(f => f.UserId == userId)
+                            .Where(f => f.IsDeleted == false)
+                            .OrderByDescending(f => f.UploadedOn)
+                            .ToListAsync();
+
+                        return View(userFiles);
+                    }
+                    else
+                    {
+                        return View("UploadedFiles", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
+                    }
                 }
+
             }
-
-
+            catch (Exception)
+            {
+                return Unauthorized();  // Handle any error in token validation
+            }
         }
 
+
+        [Authorize]
         [HttpPost]
         [Microsoft.AspNetCore.Mvc.Route("/")]
         [DisableRequestSizeLimit]
         public async Task<IActionResult> Upload(IFormFile file, int chunkIndex = 0, int totalChunks = 1)
         {
+            var handler = new JwtSecurityTokenHandler();
             try
             {
-                if (file != null)
+                var token = Request.Cookies["JwtToken"];
+                var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+                if (string.IsNullOrEmpty(userId))
                 {
-                    string fileExt = Path.GetExtension(file.FileName).ToLower();
+                    return RedirectToAction("Logout", "Account");
+                }
 
-                    if (!System.Array.Exists(ext, e => e == fileExt))
+                try
+                {
+                    if (file != null)
                     {
-                        ViewBag.Message = $"*Invalid file extension: {fileExt}. Allowed types are {string.Join(", ", ext)}.";
-                        return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
-                    }
+                        string fileExt = Path.GetExtension(file.FileName).ToLower();
 
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
-                    string fileName = $"{originalFileName}_{timestamp}{fileExt}";
-                    string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
-
-
-                    // Temporary storage for chunks
-                    string tempDir = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\TempChunks");
-                    Directory.CreateDirectory(tempDir);
-
-                    // Save the current chunk
-                    string tempFilePath = Path.Combine(tempDir, $"{fileName}_chunk{chunkIndex}");
-
-                    // Save the chunk asynchronously
-                    using (FileStream tempStream = new FileStream(tempFilePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(tempStream);
-                    }
-
-                    string? baseDirectory = Directory.GetCurrentDirectory();
-                    string? parent1 = Directory.GetParent(baseDirectory)?.FullName;
-                    string? parent2 = Directory.GetParent(parent1 ?? "")?.FullName;
-                    string? parent3 = Directory.GetParent(parent2 ?? "")?.FullName;
-
-                    if (parent3 == null)
-                    {
-                        throw new InvalidOperationException("Cannot determine the base directory.");
-                    }
-
-                    string globalPath = Path.Combine(parent3, "Uploaded Folder", fileName);
-
-                    //string globalPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName).FullName, "Uploaded Folder", fileName);
-                    // If all chunks are uploaded, merge them in parallel
-                    if (chunkIndex + 1 == totalChunks)
-                    {
-
-                        string compressedFilePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\CompressedUploads", fileName);
-
-                        // Create a list of tasks for merging chunks in parallel
-                        var tasks = new List<Task>();
-
-                        // Merge chunks into the final file
-                        using (FileStream finalFile = new FileStream(finalPath, FileMode.Create))
+                        if (!System.Array.Exists(ext, e => e == fileExt))
                         {
-                            for (int i = 0; i < totalChunks; i++)
-                            {
-                                int chunkIndexToMerge = i; // Capture the correct index for each task
-                                tasks.Add(Task.Run(async () =>
-                                {
-                                    string chunkPath = Path.Combine(tempDir, $"{fileName}_chunk{chunkIndexToMerge}");
-                                    using (FileStream chunkStream = new FileStream(chunkPath, FileMode.Open))
-                                    {
-                                        await chunkStream.CopyToAsync(finalFile);
-                                    }
-                                    System.IO.File.Delete(chunkPath); // Delete the processed chunk
-                                }));
-                            }
-
-                            // Wait for all chunk merge tasks to complete
-                            await Task.WhenAll(tasks);
+                            ViewBag.Message = $"*Invalid file extension: {fileExt}. Allowed types are {string.Join(", ", ext)}.";
+                            return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                         }
 
-                        // Save to global path
-                        System.IO.File.Copy(finalPath, globalPath, true);
-                        if (fileExt == ".xls")
-                        {
-                            using (FileStream fileDemo = new FileStream(finalPath, FileMode.Open, FileAccess.Read))
-                            {
-                                var workbook = new HSSFWorkbook(fileDemo);  // Use HSSFWorkbook for .xls filesx
-                                var sheet = workbook.GetSheetAt(0);  // First sheet in the workbook
+                        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+                        string fileName = $"{originalFileName}_{timestamp}{fileExt}";
+                        string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", fileName);
 
-                                var headers = new List<string>();
-                                var headerRow = sheet.GetRow(0);  // Read the first row as headers
-                                if (headerRow == null)
+
+                        // Temporary storage for chunks
+                        string tempDir = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\TempChunks");
+                        Directory.CreateDirectory(tempDir);
+
+                        // Save the current chunk
+                        string tempFilePath = Path.Combine(tempDir, $"{fileName}_chunk{chunkIndex}");
+
+                        // Save the chunk asynchronously
+                        using (FileStream tempStream = new FileStream(tempFilePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(tempStream);
+                        }
+
+                        string? baseDirectory = Directory.GetCurrentDirectory();
+                        string? parent1 = Directory.GetParent(baseDirectory)?.FullName;
+                        string? parent2 = Directory.GetParent(parent1 ?? "")?.FullName;
+                        string? parent3 = Directory.GetParent(parent2 ?? "")?.FullName;
+
+                        if (parent3 == null)
+                        {
+                            throw new InvalidOperationException("Cannot determine the base directory.");
+                        }
+
+                        string globalPath = Path.Combine(parent3, "Uploaded Folder", fileName);
+
+                        //string globalPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName).FullName, "Uploaded Folder", fileName);
+                        // If all chunks are uploaded, merge them in parallel
+                        if (chunkIndex + 1 == totalChunks)
+                        {
+
+                            string compressedFilePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\CompressedUploads", fileName);
+
+                            // Create a list of tasks for merging chunks in parallel
+                            var tasks = new List<Task>();
+
+                            // Merge chunks into the final file
+                            using (FileStream finalFile = new FileStream(finalPath, FileMode.Create))
+                            {
+                                for (int i = 0; i < totalChunks; i++)
+                                {
+                                    int chunkIndexToMerge = i; // Capture the correct index for each task
+                                    tasks.Add(Task.Run(async () =>
+                                    {
+                                        string chunkPath = Path.Combine(tempDir, $"{fileName}_chunk{chunkIndexToMerge}");
+                                        using (FileStream chunkStream = new FileStream(chunkPath, FileMode.Open))
+                                        {
+                                            await chunkStream.CopyToAsync(finalFile);
+                                        }
+                                        System.IO.File.Delete(chunkPath); // Delete the processed chunk
+                                    }));
+                                }
+
+                                // Wait for all chunk merge tasks to complete
+                                await Task.WhenAll(tasks);
+                            }
+
+                            // Save to global path
+                            System.IO.File.Copy(finalPath, globalPath, true);
+                            if (fileExt == ".xls")
+                            {
+                                using (FileStream fileDemo = new FileStream(finalPath, FileMode.Open, FileAccess.Read))
+                                {
+                                    var workbook = new HSSFWorkbook(fileDemo);  // Use HSSFWorkbook for .xls filesx
+                                    var sheet = workbook.GetSheetAt(0);  // First sheet in the workbook
+
+                                    var headers = new List<string>();
+                                    var headerRow = sheet.GetRow(0);  // Read the first row as headers
+                                    if (headerRow == null)
+                                    {
+                                        System.IO.File.Delete(finalPath);
+                                        ViewBag.Message = "*Excel file is empty.";
+                                        return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
+                                    }
+
+                                }
+                            }
+                            if (fileExt == ".xlsx")
+                            {
+                                using var package = new ExcelPackage(new FileInfo(finalPath));
+
+                                var worksheet = package.Workbook.Worksheets.First(); // Get the first worksheet
+
+                                // Check if the worksheet is empty
+                                if (worksheet.Dimension == null)
                                 {
                                     System.IO.File.Delete(finalPath);
                                     ViewBag.Message = "*Excel file is empty.";
                                     return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                                 }
-
                             }
-                        }
-                        if (fileExt == ".xlsx")
-                        {
-                            using var package = new ExcelPackage(new FileInfo(finalPath));
-
-                            var worksheet = package.Workbook.Worksheets.First(); // Get the first worksheet
-
-                            // Check if the worksheet is empty
-                            if (worksheet.Dimension == null)
+                            // Compress the file for thumbnails (no change in logic)
+                            if (fileExt != ".xls" && fileExt != ".xlsx" && fileExt != ".zip")
                             {
-                                System.IO.File.Delete(finalPath);
-                                ViewBag.Message = "*Excel file is empty.";
-                                return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
-                            }
-                        }
-                        // Compress the file for thumbnails (no change in logic)
-                        if (fileExt != ".xls" && fileExt != ".xlsx" && fileExt != ".zip")
-                        {
-                            if (fileExt == ".svg" || fileExt == ".webp")
-                            {
-                                using (FileStream CompressedSvgPath = new FileStream(compressedFilePath, FileMode.Create))
+                                if (fileExt == ".svg" || fileExt == ".webp")
                                 {
-                                    await file.CopyToAsync(CompressedSvgPath);
-                                }
-                            }
-                            else
-                            {
-                                using (var inputStream = file.OpenReadStream())
-                                using (var image = Image.Load(inputStream))
-                                {
-                                    var encoder = new JpegEncoder { Quality = 1 }; // Adjust quality (1-100)
-
-                                    using (var outputStream = new FileStream(compressedFilePath, FileMode.Create))
+                                    using (FileStream CompressedSvgPath = new FileStream(compressedFilePath, FileMode.Create))
                                     {
-                                        image.Save(outputStream, encoder);
+                                        await file.CopyToAsync(CompressedSvgPath);
+                                    }
+                                }
+                                else
+                                {
+                                    using (var inputStream = file.OpenReadStream())
+                                    using (var image = Image.Load(inputStream))
+                                    {
+                                        var encoder = new JpegEncoder { Quality = 1 }; // Adjust quality (1-100)
+
+                                        using (var outputStream = new FileStream(compressedFilePath, FileMode.Create))
+                                        {
+                                            image.Save(outputStream, encoder);
+                                        }
                                     }
                                 }
                             }
-                        }
-                        //return Ok("File uploaded and rows saved successfully.");
-                        FileInfo fileInfo = new FileInfo(finalPath);
-                        double fileSizeInBytes = fileInfo.Length;
-                        double fileSizeInKB = fileSizeInBytes / 1024;
-                        double fileSize = Math.Round(fileSizeInKB, 2);
-                        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                        if (string.IsNullOrEmpty(userId))
-                        {
-                            return BadRequest("User ID not found."); // Handle as needed
-                        }
-                        var fileUploadModal = new UploadedFileInfo
-                        {
-                            FileName = originalFileName + fileExt,
-                            FilenameWithTimeStamp = fileName,
-                            FileType = file.ContentType,
-                            FilePathOutsideProject = globalPath,
-                            FileSize = fileSize,
-                            CompressedPath = compressedFilePath,
-                            Extention = fileExt,
-                            UploadedOn = DateTime.Now,
-                            UserId = userId,
-                            IsDeleted = false
-                        };
-                        _context.UploadedFileInfo.Add(fileUploadModal);
-                        await _context.SaveChangesAsync();
-                        if (fileExt == ".xls" || fileExt == ".xlsx")
-                        {
-
-                            using (var stream = new MemoryStream())
+                            //return Ok("File uploaded and rows saved successfully.");
+                            FileInfo fileInfo = new FileInfo(finalPath);
+                            double fileSizeInBytes = fileInfo.Length;
+                            double fileSizeInKB = fileSizeInBytes / 1024;
+                            double fileSize = Math.Round(fileSizeInKB, 2);
+                            if (string.IsNullOrEmpty(userId))
                             {
-                                await file.CopyToAsync(stream);
-                                stream.Position = 0;
-
-                                var rows = ProcessExcelFile(stream, fileExt, fileUploadModal.Id);
-
-                                // Save rows to the database
-                                _context.ExcelSheetData.AddRange(rows);
-                                await _context.SaveChangesAsync();
+                                return BadRequest("User ID not found."); // Handle as needed
                             }
+                            var fileUploadModal = new UploadedFileInfo
+                            {
+                                FileName = originalFileName + fileExt,
+                                FilenameWithTimeStamp = fileName,
+                                FileType = file.ContentType,
+                                FilePathOutsideProject = globalPath,
+                                FileSize = fileSize,
+                                CompressedPath = compressedFilePath,
+                                Extention = fileExt,
+                                UploadedOn = DateTime.Now,
+                                UserId = userId,
+                                IsDeleted = false
+                            };
+                            _context.UploadedFileInfo.Add(fileUploadModal);
+                            await _context.SaveChangesAsync();
+                            if (fileExt == ".xls" || fileExt == ".xlsx")
+                            {
 
+                                using (var stream = new MemoryStream())
+                                {
+                                    await file.CopyToAsync(stream);
+                                    stream.Position = 0;
+
+                                    var rows = ProcessExcelFile(stream, fileExt, fileUploadModal.Id);
+
+                                    // Save rows to the database
+                                    _context.ExcelSheetData.AddRange(rows);
+                                    await _context.SaveChangesAsync();
+                                }
+
+                            }
+                            ViewBag.MessageSuccess = "File uploaded successfully";
                         }
-                        ViewBag.MessageSuccess = "File uploaded successfully";
+                        else
+                        {
+                            ViewBag.MessageSuccess = $"Chunk {chunkIndex + 1}/{totalChunks} uploaded successfully.";
+                        }
+
+                        return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                     }
                     else
                     {
-                        ViewBag.MessageSuccess = $"Chunk {chunkIndex + 1}/{totalChunks} uploaded successfully.";
+                        ViewBag.Message = "*Please select a file.";
                     }
-
-                    return View("Index", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                 }
-                else
+                catch (Exception ex)
                 {
-                    ViewBag.Message = "*Please select a file.";
+                    ViewBag.Message = "*An error occurred while uploading the file. Please try again.";
+                    Console.WriteLine(ex.Message);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                ViewBag.Message = "*An error occurred while uploading the file. Please try again.";
-                Console.WriteLine(ex.Message);
+                return RedirectToAction("Logout", "Account");
             }
 
             return RedirectToAction("Index");
@@ -731,6 +784,7 @@ namespace FileUpload.Controllers
 
             return View(EXM);
         }
+        [Authorize]
         public async Task<IActionResult> Details(int id)
         {
             if (User.Identity != null && !User.Identity.IsAuthenticated)
@@ -746,7 +800,7 @@ namespace FileUpload.Controllers
 
             return View(file);
         }
-
+        [Authorize]
         public async Task<IActionResult> Download(int id)
         {
             var file = await _context.UploadedFileInfo.FindAsync(id);
@@ -761,7 +815,7 @@ namespace FileUpload.Controllers
 
             return File(fileBytes, file.FileType, file.FileName);
         }
-
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
 
