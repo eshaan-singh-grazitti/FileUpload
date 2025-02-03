@@ -9,6 +9,7 @@ namespace FileUpload.Models
         public int Id { get; set; }
 
         [Required]
+        [MaxLength(51)]
         public string UserName { get; set; } = null!;
 
         [Required]
@@ -17,6 +18,7 @@ namespace FileUpload.Models
         [Required]
         public int FileId { get; set; }
         [Required]
+        [MaxLength(255)]
         public string FileName { get; set; } = null!;
 
         // Navigation property for the related FileUpload
@@ -33,6 +35,7 @@ namespace FileUpload.Models
         public string OldValue { get; set; } = null!;
 
         [Required]
+        [MaxLength(50)]
         public string NewValue { get; set; } = null!;
 
         [Required]

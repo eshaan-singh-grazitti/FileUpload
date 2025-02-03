@@ -11,6 +11,7 @@ namespace FileUpload.Models
         public string Country { get; set; } = null!;
         public string Product { get; set; } = null!;
         public string DiscountBand { get; set; } = null!;
+        [Column(TypeName = "decimal(18,4)")]
         public decimal UnitsSold { get; set; }
         public int ManufacturingPrice { get; set; }
         public string UserId { get; set; } = null!;

@@ -4,6 +4,7 @@ using FileUpload.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FileUpload.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250203060914_UpdatedRequiredLengthofStrings")]
+    partial class UpdatedRequiredLengthofStrings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,7 +75,7 @@ namespace FileUpload.Migrations
 
                     b.HasIndex("FileId");
 
-                    b.ToTable("ExcelAuditTrail", (string)null);
+                    b.ToTable("ExcelAuditTrail");
                 });
 
             modelBuilder.Entity("FileUpload.Models.ExcelSheetData", b =>
@@ -116,7 +119,7 @@ namespace FileUpload.Migrations
 
                     b.HasIndex("FileId");
 
-                    b.ToTable("ExcelSheetData", (string)null);
+                    b.ToTable("ExcelSheetData");
                 });
 
             modelBuilder.Entity("FileUpload.Models.UploadedFileInfo", b =>
@@ -178,7 +181,7 @@ namespace FileUpload.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UploadedFileInfo", (string)null);
+                    b.ToTable("UploadedFileInfo");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

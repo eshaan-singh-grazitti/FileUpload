@@ -2,15 +2,15 @@
 using FileUpload.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using OfficeOpenXml;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using System.Security.Claims;
+
 
 namespace FileUpload.Controllers
 {
@@ -200,19 +200,13 @@ namespace FileUpload.Controllers
                             else
                             {
                                 using (var inputStream = file.OpenReadStream())
+                                using (var image = Image.Load(inputStream))
                                 {
-                                    using (var originalImage = Image.FromStream(inputStream))
-                                    {
-                                        // Set up compression parameters
-                                        var jpegEncoder = ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
-                                        var encoderParams = new EncoderParameters(1);
-                                        encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, 1L); // Adjust quality (1-100)
+                                    var encoder = new JpegEncoder { Quality = 1 }; // Adjust quality (1-100)
 
-                                        // Save compressed image to file
-                                        using (var outputStream = new FileStream(compressedFilePath, FileMode.Create))
-                                        {
-                                            originalImage.Save(outputStream, jpegEncoder, encoderParams);
-                                        }
+                                    using (var outputStream = new FileStream(compressedFilePath, FileMode.Create))
+                                    {
+                                        image.Save(outputStream, encoder);
                                     }
                                 }
                             }
@@ -517,7 +511,7 @@ namespace FileUpload.Controllers
                             continue;
                         var oldValue = typeof(ExcelSheetData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
                         string newValue = updatedRow.ElementAt(colIndex)?.ToString();
-                        if(newValue == null || oldValue == null)
+                        if (newValue == null || oldValue == null)
                         {
                             return BadRequest("Value is null");
                         }
@@ -777,7 +771,7 @@ namespace FileUpload.Controllers
                 return BadRequest("User ID not found."); // Handle as needed
             }
             var user = await _userManager.FindByIdAsync(userId);
-            
+
             if (user == null)
             {
                 return BadRequest("User not found."); // Handle as needed

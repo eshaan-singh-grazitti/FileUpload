@@ -16,6 +16,10 @@ namespace FileUpload.Data
         public DbSet<ExcelSheetData> ExcelSheetData { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            builder.Entity<ExcelSheetData>()
+            .Property(e => e.UnitsSold)
+            .HasColumnType("decimal(18,2)");
+
             base.OnModelCreating(builder);
         }
     }
