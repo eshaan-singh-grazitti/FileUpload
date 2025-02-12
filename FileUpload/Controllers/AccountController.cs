@@ -79,7 +79,7 @@ namespace FileUpload.Controllers
                     {
                         HttpOnly = true,  // Ensure it cannot be accessed via JavaScript
                         Secure = true,    // Ensure it's only sent over HTTPS
-                        Expires = DateTime.UtcNow.AddMinutes(20) // Set expiration (optional)
+                        Expires = DateTime.Now.AddMinutes(20) // Set expiration (optional)
                     });
 
                     var roleUser = await _userManager.GetRolesAsync(user);
