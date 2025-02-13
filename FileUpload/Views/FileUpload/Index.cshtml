@@ -233,13 +233,13 @@
     </div>
     @if (@ViewBag.MessageSuccess != null)
     {
-        <div class="Success Index_sMsg">
+        <div class="Success Index_sMsg" id="success1">
             @ViewBag.MessageSuccess
         </div>
     }
     @if (@ViewBag.Message != null)
     {
-        <div class="Error Index_sMsg1">
+        <div class="Error Index_sMsg1"id="error1">
             @ViewBag.Message
         </div>
     }
@@ -251,6 +251,8 @@
     const uploadButton = document.getElementById('uploadButton');
         const uploadForm = document.getElementById("uploadForm");
             const loader = document.getElementById('loader');
+            const msgSuccess = document.getElementById('success1');
+            const msgError = document.getElementById('error1');
 
 
 
@@ -277,7 +279,8 @@
             // window.location.replace(window.location.href);
             // location.reload(true);
             // location.href = location.href;
-            window.location.href = "/FileUpload/Index";
+            msgSuccess.style.display = "none";
+            msgError.style.display = "none";
             },2000);
 
         }

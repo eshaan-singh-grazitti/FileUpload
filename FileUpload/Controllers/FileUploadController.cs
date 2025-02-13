@@ -40,6 +40,10 @@ namespace FileUpload.Controllers
             try
             {
                 var token = Request.Cookies["JwtToken"];
+                if (string.IsNullOrEmpty(token))
+                {
+                    RedirectToAction("Logout", "Account");
+                }
                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
                 var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
@@ -48,29 +52,31 @@ namespace FileUpload.Controllers
                     return RedirectToAction("Logout", "Account");
                 }
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return RedirectToAction("Logout", "Account");
             }
 
-                TempData["message"] = ViewBag.Message;
+            TempData["message"] = ViewBag.Message;
             var files = await _context.UploadedFileInfo.ToListAsync();
             return View(files);
         }
-
-
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> UploadedFiles()
         {
             if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("Logout", "Account");
             }
             var handler = new JwtSecurityTokenHandler();
             try
             {
                 var token = Request.Cookies["JwtToken"];
+                if (string.IsNullOrEmpty(token))
+                {
+                    return RedirectToAction("Logout", "Account");
+                }
                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
                 var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
@@ -81,7 +87,7 @@ namespace FileUpload.Controllers
                 var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
                 {
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("Logout", "Account");
                 }
                 else
                 {
@@ -98,7 +104,7 @@ namespace FileUpload.Controllers
                     }
                     else
                     {
-                        return View("UploadedFiles", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
+                        return View(_context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
                     }
                 }
 
@@ -112,7 +118,7 @@ namespace FileUpload.Controllers
 
         [Authorize]
         [HttpPost]
-        [Microsoft.AspNetCore.Mvc.Route("/")]
+        [Microsoft.AspNetCore.Mvc.Route("/FileUpload/Index")]
         [DisableRequestSizeLimit]
         public async Task<IActionResult> Upload(IFormFile file, int chunkIndex = 0, int totalChunks = 1)
         {
@@ -120,6 +126,11 @@ namespace FileUpload.Controllers
             try
             {
                 var token = Request.Cookies["JwtToken"];
+                if (string.IsNullOrEmpty(token))
+                {
+                    return RedirectToAction("Logout", "Account");
+                }
+                
                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
                 var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
@@ -423,7 +434,7 @@ namespace FileUpload.Controllers
             var file = _context.UploadedFileInfo.Find(fileId);
             if (file == null)
             {
-                return BadRequest("File Not Found");
+                return RedirectToAction("FileNotFound");
             }
 
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.FilenameWithTimeStamp);
@@ -442,19 +453,23 @@ namespace FileUpload.Controllers
                         excelData = excelData.OrderBy(row =>
                         {
                             var value = row[sortColumn];
-                            // Check if the value contains symbols like $, ., or ,
-                            if (ContainsNumericSymbols(value))
-                            {
-                                var cleanedValue = CleanNumericValue(value);
-                                // Try to parse the cleaned value as numeric for sorting
-                                return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
-                            }
-                            else
-                            {
-                                // Sort as string if no numeric symbols are present
-                                return value as object;
-                            }
+
+                            if (value == null)
+                                return (object)string.Empty; // Handle null values safely
+
+                            string stringValue = value.ToString().Trim();
+
+                            // If the value is purely numeric (integer or decimal), parse and sort numerically
+                            if (IsPureInteger(stringValue, out int intValue))
+                                return intValue;
+
+                            if (IsPureDecimal(stringValue, out decimal decimalValue))
+                                return decimalValue;
+
+                            // If the value contains non-numeric characters, sort it as a string
+                            return stringValue;
                         }).ToList();
+
                         DTO.DirectionValue = "Ascending";
                     }
                     else if (sortDirection.ToLower() == "desc")
@@ -462,21 +477,28 @@ namespace FileUpload.Controllers
                         excelData = excelData.OrderByDescending(row =>
                         {
                             var value = row[sortColumn];
-                            // Check if the value contains symbols like $, ., or ,
-                            if (ContainsNumericSymbols(value))
-                            {
-                                var cleanedValue = CleanNumericValue(value);
-                                // Try to parse the cleaned value as numeric for sorting
-                                return decimal.TryParse(cleanedValue, out var numericValue) ? (object)numericValue : value as object;
-                            }
-                            else
-                            {
-                                // Sort as string if no numeric symbols are present
-                                return value as object;
-                            }
+
+                            if (value == null)
+                                return (object)string.Empty; // Handle null values safely
+
+                            string stringValue = value.ToString().Trim();
+
+                            // If the value is purely numeric (integer or decimal), parse and sort numerically
+                            if (IsPureInteger(stringValue, out int intValue))
+                                return intValue;
+
+                            if (IsPureDecimal(stringValue, out decimal decimalValue))
+                                return decimalValue;
+
+                            // If the value contains non-numeric characters, sort it as a string
+                            return stringValue;
                         }).ToList();
+
                         DTO.DirectionValue = "Descending";
                     }
+
+
+
 
                 }
                 catch (Exception ex)
@@ -491,18 +513,14 @@ namespace FileUpload.Controllers
             // Return the partial view with sorted data
             return PartialView("_PreviewExcel", DTO);
         }
-        private bool ContainsNumericSymbols(string value)
+        private static bool IsPureInteger(string value, out int intValue)
         {
-            return value.Contains("$") || value.Contains(".") || value.Contains(",");
+            return int.TryParse(value, out intValue);
         }
 
-        private string CleanNumericValue(string value)
+        private static bool IsPureDecimal(string value, out decimal decimalValue)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                return value;
-
-            // Remove non-numeric characters except for the decimal point
-            return new string(value.Where(c => char.IsDigit(c) || c == '.' || c == '-').ToArray());
+            return decimal.TryParse(value, out decimalValue);
         }
 
         [HttpGet]
@@ -514,7 +532,19 @@ namespace FileUpload.Controllers
         [HttpPost]
         public async Task<IActionResult> SaveUpdatedExcel([FromBody] ExcelEditRequestModel data)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var handler = new JwtSecurityTokenHandler();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+            var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+            var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID not found."); // Handle as needed
@@ -563,10 +593,10 @@ namespace FileUpload.Controllers
                         if (!columnMapping.TryGetValue(colIndex, out var columnProperty))
                             continue;
                         var oldValue = typeof(ExcelSheetData).GetProperty(columnProperty)?.GetValue(existingRow)?.ToString();
-                        string newValue = updatedRow.ElementAt(colIndex)?.ToString();
+                        var newValue = updatedRow.ElementAt(colIndex)?.ToString();
                         if (newValue == null || oldValue == null)
                         {
-                            return BadRequest("Value is null");
+                            return Ok("Value is null");
                         }
                         if (colIndex == 5) // If it's a numeric column
                         {
@@ -578,7 +608,7 @@ namespace FileUpload.Controllers
                             }
                             else
                             {
-                                return BadRequest(new { success = false, message = "Invalid numeric value." });
+                                return Ok(new { success = false, message = "Invalid numeric value." });
                             }
                         }
 
@@ -586,14 +616,14 @@ namespace FileUpload.Controllers
                         {
                             if (newValue.Length > 50)
                             {
-                                return BadRequest(new { success = false, message = "Maximum of 50 characters can be entered." });
+                                return Ok(new { success = false, message = "Maximum of 50 characters can be entered." });
                             }
 
 
 
                             if (!IsValidChangeFormat(oldValue, newValue))
                             {
-                                return BadRequest(new { success = false, message = "Invalid format in new value." });
+                                return Ok(new { success = false, message = "Invalid format in new value." });
                             }
                             changeDetected = true;
                             // Log the change
@@ -612,6 +642,11 @@ namespace FileUpload.Controllers
                             if (colIndex == 5)
                             {
                                 decimal newValueData = Convert.ToDecimal(newValue);
+                                typeof(ExcelSheetData).GetProperty(columnProperty)?.SetValue(existingRow, newValueData);
+                            }
+                            else if (colIndex == 6)
+                            {
+                                int newValueData = Convert.ToInt32(newValue);
                                 typeof(ExcelSheetData).GetProperty(columnProperty)?.SetValue(existingRow, newValueData);
                             }
                             else
@@ -643,7 +678,7 @@ namespace FileUpload.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { success = false, message = ex.Message });
+                return Ok(new { success = false, message = ex.Message });
             }
         }
 
@@ -729,12 +764,26 @@ namespace FileUpload.Controllers
 
             return double.TryParse(numericValue, out _);
         }
+        [Authorize(Roles = "Admin")]
         public IActionResult Changes(int Id)
         {
+            var handler = new JwtSecurityTokenHandler();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+            var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+            var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
             var file = _context.UploadedFileInfo.Find(Id);
             if (file == null)
             {
-                return NotFound("File Not Found");
+                return RedirectToAction("FileNotFound");
             }
             var file1 = _context.ExcelAuditTrail
                 .Where(f => f.FileId == Id)
@@ -779,7 +828,7 @@ namespace FileUpload.Controllers
             }
             else
             {
-                return NotFound("File Not Found");
+                return RedirectToAction("FileNotFound");
             }
 
             return View(EXM);
@@ -787,15 +836,34 @@ namespace FileUpload.Controllers
         [Authorize]
         public async Task<IActionResult> Details(int id)
         {
+            var handler = new JwtSecurityTokenHandler();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+            var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+            var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+
             if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("Logout", "Account");
             }
 
             var file = await _context.UploadedFileInfo.FindAsync(id);
             if (file == null)
             {
-                return BadRequest("File Not Found");
+                return RedirectToAction("FileNotFound");
+            }
+            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            if (userId != file.UserId && userRole != "Admin")
+            {
+                return RedirectToAction("FileNotFound");
             }
 
             return View(file);
@@ -803,11 +871,30 @@ namespace FileUpload.Controllers
         [Authorize]
         public async Task<IActionResult> Download(int id)
         {
+
+            var handler = new JwtSecurityTokenHandler();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+            var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+            var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
             var file = await _context.UploadedFileInfo.FindAsync(id);
 
             if (file == null)
             {
-                return NotFound();
+                return RedirectToAction("FileNotFound");
+            }
+            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            if (userId != file.UserId && userRole != "Admin")
+            {
+                return RedirectToAction("FileNotFound");
             }
             string finalPath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\Uploads", file.FilenameWithTimeStamp);
             //string finalPath = file.Data;
@@ -819,10 +906,18 @@ namespace FileUpload.Controllers
         public async Task<IActionResult> Delete(int id)
         {
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var handler = new JwtSecurityTokenHandler();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+            var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+            var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
             if (string.IsNullOrEmpty(userId))
             {
-                return BadRequest("User ID not found."); // Handle as needed
+                return RedirectToAction("Logout", "Account");
             }
             var user = await _userManager.FindByIdAsync(userId);
 
@@ -835,6 +930,11 @@ namespace FileUpload.Controllers
 
             if (file != null)
             {
+                var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+                if (userId != file.UserId && userRole != "Admin")
+                {
+                    return RedirectToAction("FileNotFound");
+                }
                 file.IsDeleted = true;
                 if (user.UserName == "admin@abc.com")
                 {
@@ -856,22 +956,13 @@ namespace FileUpload.Controllers
 
                 ViewBag.MessageSuccess = "File Deleted Successfully";
             }
-            bool isInRole = await _userManager.IsInRoleAsync(user, "User");
-            if (isInRole)
-            {
-                var userFiles = await _context.UploadedFileInfo
-                    .Where(f => f.UserId == userId)
-                    .Where(a => a.IsDeleted == false)
-                    .OrderByDescending(f => f.UploadedOn)
-                    .ToListAsync();
+            return RedirectToAction("UploadedFiles");
 
-                return View("UploadedFiles", userFiles);
-            }
-            else
-            {
-                return View("UploadedFiles", _context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
-            }
         }
 
+        public IActionResult FileNotFound()
+        {
+            return View();
+        }
     }
 }

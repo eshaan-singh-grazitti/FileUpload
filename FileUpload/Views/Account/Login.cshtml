@@ -117,6 +117,7 @@
 </style>
 
 <form asp-action="Login" method="post" class="form">
+    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
     <p class="form-title">Sign in to your account</p>
 
     <div class="input-container form-group">

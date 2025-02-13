@@ -18,9 +18,15 @@ namespace FileUpload.Controllers
             _context = context;
         }
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AdminDashboard(string token)
+        public async Task<IActionResult> AdminDashboard()
         {
-            if(token == null)
+            var handler = new JwtSecurityTokenHandler();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+            if (token == null)
             {
                 token = Request.Cookies["JwtToken"];
             }
@@ -28,7 +34,6 @@ namespace FileUpload.Controllers
             {
                 return RedirectToAction("Login", "Account");
             }
-            var handler = new JwtSecurityTokenHandler();
             try
             {
                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
@@ -52,8 +57,16 @@ namespace FileUpload.Controllers
             }
         }
         [Authorize(Roles = "User,Admin")]
-        public IActionResult UserDashboard(string token)
+        public IActionResult UserDashboard()
         {
+            var handler = new JwtSecurityTokenHandler();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Logout", "Account");
+            }
+ 
+
             if (token == null)
             {
                 token = Request.Cookies["JwtToken"];
@@ -62,7 +75,6 @@ namespace FileUpload.Controllers
             {
                 return RedirectToAction("Login", "Account");
             }
-            var handler = new JwtSecurityTokenHandler();
             try
             {
                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;

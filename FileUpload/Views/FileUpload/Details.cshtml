@@ -327,17 +327,16 @@
                 if (result.success) {
                     alert(result.message);
                     $("#excelPreviewContainer").html(result.data); // Adjust according to the response
-                    // refreshTable();
                     sortExcel("","","");
-                    // location.reload();
 
                 } 
                 else {
                     alert(result.message);
+                    sortExcel("","","");
                 }
             },
-            error: function (xhr) {
-                alert("Error: " + xhr.responseText);
+            error: function (result) {
+                alert("Error: " + result.message);
                 sortExcel("","","");
             }
         });

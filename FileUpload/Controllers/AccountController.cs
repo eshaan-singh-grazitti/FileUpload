@@ -53,13 +53,14 @@ namespace FileUpload.Controllers
             return View(model);
         }
         [HttpGet]
-        public IActionResult Login()
+        public IActionResult Login(string? returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
         [ValidateAntiForgeryToken]
         [HttpPost]
-        public async Task<IActionResult> Login(LoginModel model)
+        public async Task<IActionResult> Login(LoginModel model, string? returnUrl = null)
         {
             if (!ModelState.IsValid)
             {
@@ -89,12 +90,20 @@ namespace FileUpload.Controllers
                         var role = roleUser[0];
                         if (role == "Admin")
                         {
+                            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                            {
+                                return Redirect(returnUrl);
+                            }
                             // Pass token along with the redirect URL (or use it in your API for admin dashboard)
-                            return RedirectToAction("AdminDashboard", "Dashboard", new { token });
+                            return RedirectToAction("AdminDashboard", "Dashboard");
                         }
                         else
                         {
-                            return RedirectToAction("UserDashboard", "Dashboard", new { token });
+                            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                            {
+                                return Redirect(returnUrl);
+                            }
+                            return RedirectToAction("UserDashboard", "Dashboard" );
                         }
                     }
                 }

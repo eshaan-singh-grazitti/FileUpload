@@ -241,7 +241,7 @@ else
                                         <div>
 
 
-                                            <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')"
+                                            <a onclick="confirmDelete('@Url.Action("Delete", "FileUpload", new { id = file.Id })')"
                                                class="btn btn-danger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </a>
