@@ -130,7 +130,7 @@ namespace FileUpload.Controllers
                 {
                     return RedirectToAction("Logout", "Account");
                 }
-                
+
                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
                 var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
@@ -687,44 +687,57 @@ namespace FileUpload.Controllers
             IWorkbook workbook;
 
             // Open the Excel file
-            using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
+            using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 if (Path.GetExtension(filePath).ToLower() == ".xls")
                 {
-                    workbook = new HSSFWorkbook(fileStream); // For .xls
+                    workbook = new HSSFWorkbook(fileStream); // For .xls files
                 }
                 else
                 {
-                    workbook = new XSSFWorkbook(fileStream); // For .xlsx
+                    workbook = new XSSFWorkbook(fileStream); // For .xlsx files
                 }
-            }
+            } // Ensure file stream is closed before writing
 
             var sheet = workbook.GetSheetAt(0); // Assuming data is in the first sheet.
 
-            for (int rowIndex = 0; rowIndex < updatedData.Count; rowIndex++)
+            var columnMapping = new Dictionary<int, string>
+    {
+        { 1, "Segment" },
+        { 2, "Country" },
+        { 3, "Product" },
+        { 4, "DiscountBand" },
+        { 5, "UnitsSold" },
+        { 6, "ManufacturingPrice" }
+    };
+
+            // Start from row index 1 (skip the first row to preserve headers)
+            for (int rowIndex = 1; rowIndex <= updatedData.Count; rowIndex++)
             {
                 var excelRow = sheet.GetRow(rowIndex) ?? sheet.CreateRow(rowIndex);
+                var updatedRow = updatedData[rowIndex - 1]; // Get corresponding row data
 
-                var updatedRow = updatedData[rowIndex]; // Get the corresponding row data from updatedData
-
-                // Loop through the columns (skipping RowId, starting from Column1 to Column6)
-                for (int colIndex = 1; colIndex <= 6; colIndex++) // Start from column 1 (Column1)
+                for (int colIndex = 1; colIndex <= columnMapping.Count; colIndex++)
                 {
-                    // Get the corresponding value from the updatedRow
-                    var columnValue = typeof(ExcelSheetData).GetProperty($"Column{colIndex}")?.GetValue(updatedRow)?.ToString();
+                    if (!columnMapping.TryGetValue(colIndex, out var columnProperty))
+                        continue;
 
-                    // Set the cell value in the Excel sheet
-                    var cell = excelRow.GetCell(colIndex - 1);
-                    cell.SetCellValue(columnValue);
+                    var columnValue = typeof(ExcelSheetData).GetProperty(columnProperty)?.GetValue(updatedRow)?.ToString();
+
+                    var cell = excelRow.GetCell(colIndex - 1) ?? excelRow.CreateCell(colIndex - 1); // Ensure cell exists
+                    cell.SetCellValue(columnValue ?? ""); // Avoid null values
                 }
             }
 
-            // Save the changes to the Excel file
-            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Write))
+            // Write changes to the file
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 workbook.Write(fs);
             }
+
+            workbook.Close(); // Properly close workbook
         }
+
 
         private bool IsValidChangeFormat(string oldValue, string newValue)
         {
