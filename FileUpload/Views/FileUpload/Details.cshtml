@@ -84,6 +84,37 @@
         color: #555;
         z-index: 1;
     }
+
+    .top-div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search {
+        display: flex;
+        position: relative;
+        margin-bottom: 1rem;
+        justify-content: center;
+        /* outline:2px solid black; */
+    }
+
+
+        .search input[type="text"] {
+            width: 250px;
+            padding: 10px;
+            border: 2px solid black;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            outline: none;
+        }
+
+            .search input[type="text"]:focus {
+                outline: none; /* Ensure no outline on focus */
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            }
+
+
 </style>
 
 <h1>@Model.FileName's Details</h1>
@@ -101,9 +132,14 @@
                 <p>@ViewBag.ErrorMessage</p>
 
             }
-            <div class="preview-div">
-                <button class="btn btn-primary" onclick="RefreshTable()">Refresh Table</button>
+            <div class="top-div">
+@*                 <div class="search">
+                    <input id="searchInput" placeholder="Search..." type="text" oninput="searchTable()" />
+                </div> *@
             </div>
+                <div class="preview-div">
+                    <button class="btn btn-primary" onclick="RefreshTable()">Refresh Table</button>
+                </div>
 
             <div id="excelPreviewContainer">
             </div>
@@ -137,7 +173,7 @@
             </div>
 
         }
-        
+
         <p><strong>File Type:</strong> @Model.FileType</p>
         <p><strong>Uploaded On:</strong> @Model.UploadedOn.ToString("f")</p>
         <p><strong>File Size:</strong> @Model.FileSize KB</p>
@@ -300,7 +336,7 @@
               div.style.border = "1px dashed black";
             });
             document.getElementById("editBtn").classList.add("editable");
-            document.getElementById("saveChanges").classList.remove("editable");   
+            document.getElementById("saveChanges").classList.remove("editable");
             const radioButtons = document.querySelectorAll('.radio-input input[type="radio"]');
             radioButtons.forEach((radio) => {
                 radio.disabled = true;
@@ -329,7 +365,7 @@
                     $("#excelPreviewContainer").html(result.data); // Adjust according to the response
                     sortExcel("","","");
 
-                } 
+                }
                 else {
                     alert(result.message);
                     sortExcel("","","");
@@ -341,6 +377,31 @@
             }
         });
     }
+    // function searchTable() {
+    //     let input = document.getElementById("searchInput").value.toLowerCase();
+    //     let rows = document.querySelectorAll(".table-div-body .div-table-row"); // Only select rows inside table body
+    //     let noRecordsMessage = document.getElementById("noRecordsMessage");
+    //     let visibleRows = 0;
+
+    //     rows.forEach(row => {
+    //         if (!row.classList.contains("no-records")) {
+    //             let cells = row.querySelectorAll(".div-table-data");
+    //             let rowContainsSearchTerm = Array.from(cells).some(cell =>
+    //                 cell.textContent.toLowerCase().includes(input)
+    //             );
+
+    //             if (rowContainsSearchTerm) {
+    //                 row.style.display = "flex"; // Show row
+    //                 visibleRows++;
+    //             } else {
+    //                 row.style.display = "none"; // Hide row
+    //             }
+    //         }
+    //     });
+
+    //     // Show "No records found" message if no rows match the search
+    //     noRecordsMessage.style.display = visibleRows === 0 ? "block" : "none";
+    // }
 
 
 </script>
