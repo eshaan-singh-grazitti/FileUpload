@@ -18,7 +18,7 @@ namespace FileUpload.Data
         {
             builder.Entity<ExcelSheetData>()
             .Property(e => e.UnitsSold)
-            .HasColumnType("decimal(18,2)");
+            .HasColumnType("decimal(31,2)");
 
             base.OnModelCreating(builder);
         }

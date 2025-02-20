@@ -33,6 +33,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_URLS": "https://localhost:7144;http://localhost:5084"
       },
+      "applicationUrl": "https://localhost:7144;http://localhost:5144",
       "distributionName": ""
     }
   },

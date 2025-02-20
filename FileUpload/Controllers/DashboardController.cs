@@ -1,6 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
-using FileUpload.Data;
-using FileUpload.Services;
+﻿using FileUpload.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -38,7 +36,7 @@ namespace FileUpload.Controllers
             {
                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
                 var userId = jsonToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                
+
                 if (string.IsNullOrEmpty(userId))
                 {
                     return RedirectToAction("Logout", "Account");
@@ -65,7 +63,7 @@ namespace FileUpload.Controllers
             {
                 return RedirectToAction("Logout", "Account");
             }
- 
+
 
             if (token == null)
             {
@@ -84,7 +82,7 @@ namespace FileUpload.Controllers
                 {
                     return RedirectToAction("Logout", "Account");  // Handle invalid token
                 }
-               
+
                 return View();
             }
             catch (Exception)

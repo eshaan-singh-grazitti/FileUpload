@@ -1,6 +1,5 @@
 ﻿using FileUpload.Models;
 using FileUpload.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -103,7 +102,7 @@ namespace FileUpload.Controllers
                             {
                                 return Redirect(returnUrl);
                             }
-                            return RedirectToAction("UserDashboard", "Dashboard" );
+                            return RedirectToAction("UserDashboard", "Dashboard");
                         }
                     }
                 }

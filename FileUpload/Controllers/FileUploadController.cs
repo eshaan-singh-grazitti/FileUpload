@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
@@ -114,7 +113,6 @@ namespace FileUpload.Controllers
                 return Unauthorized();  // Handle any error in token validation
             }
         }
-
 
         [Authorize]
         [HttpPost]
@@ -614,9 +612,9 @@ namespace FileUpload.Controllers
 
                         if (oldValue != newValue)
                         {
-                            if (newValue.Length > 50)
+                            if (newValue.Length > 29)
                             {
-                                return Ok(new { success = false, message = "Maximum of 50 characters can be entered." });
+                                return Ok(new { success = false, message = "Maximum of 29 characters can be entered." });
                             }
 
 
@@ -702,14 +700,14 @@ namespace FileUpload.Controllers
             var sheet = workbook.GetSheetAt(0); // Assuming data is in the first sheet.
 
             var columnMapping = new Dictionary<int, string>
-    {
-        { 1, "Segment" },
-        { 2, "Country" },
-        { 3, "Product" },
-        { 4, "DiscountBand" },
-        { 5, "UnitsSold" },
-        { 6, "ManufacturingPrice" }
-    };
+                {
+                    { 1, "Segment" },
+                    { 2, "Country" },
+                    { 3, "Product" },
+                    { 4, "DiscountBand" },
+                    { 5, "UnitsSold" },
+                    { 6, "ManufacturingPrice" }
+                };
 
             // Start from row index 1 (skip the first row to preserve headers)
             for (int rowIndex = 1; rowIndex <= updatedData.Count; rowIndex++)
@@ -737,8 +735,6 @@ namespace FileUpload.Controllers
 
             workbook.Close(); // Properly close workbook
         }
-
-
         private bool IsValidChangeFormat(string oldValue, string newValue)
         {
             // Check if the old value is numeric (allowing $ at the start and a single dot)
@@ -755,7 +751,6 @@ namespace FileUpload.Controllers
                 return true; // Allow alphanumeric change
             }
         }
-
         private bool IsNumeric(string value)
         {
             // Check if the value is numeric, handling $ at the start and a single dot
