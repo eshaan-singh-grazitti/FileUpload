@@ -23,10 +23,14 @@ namespace FileUpload.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         DataTransferModel DTO = new DataTransferModel();
         ExcelChangesViewModel EXM = new ExcelChangesViewModel();
-        public FileUploadController(AppDbContext context, UserManager<IdentityUser> userManager)
+        private readonly DataRepository _dataRepo;
+        private readonly IConfiguration _config;
+        public FileUploadController(AppDbContext context, UserManager<IdentityUser> userManager, DataRepository dataRepo, IConfiguration config)
         {
             _context = context;
             _userManager = userManager;
+            _dataRepo = dataRepo;
+            _config = config;
         }
         [Authorize]
         public async Task<IActionResult> Index()
@@ -62,7 +66,7 @@ namespace FileUpload.Controllers
         }
         [Authorize]
         [HttpGet]
-        public async Task<IActionResult> UploadedFiles()
+        public async Task<IActionResult> UploadedFiles(int? page)
         {
             if (User.Identity != null && !User.Identity.IsAuthenticated)
             {
@@ -90,20 +94,31 @@ namespace FileUpload.Controllers
                 }
                 else
                 {
+                    int defaultPageNumber = _config.GetValue<int>("Pagination:DefaultPageNumber");
+                    int pageSize = _config.GetValue<int>("Pagination:PageSize");
+                    int pageNumber = page ?? defaultPageNumber;
                     bool isInRole = await _userManager.IsInRoleAsync(user, "User");
                     if (isInRole)
                     {
-                        var userFiles = await _context.UploadedFileInfo
-                            .Where(f => f.UserId == userId)
-                            .Where(f => f.IsDeleted == false)
-                            .OrderByDescending(f => f.UploadedOn)
-                            .ToListAsync();
+                        var (data, totalCount) = await _dataRepo.GetPaginatedDataAsync(userId, isInRole, pageNumber, pageSize);
 
-                        return View(userFiles);
+                        int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                        ViewBag.PageNumber = pageNumber;
+                        ViewBag.PageSize = pageSize;
+                        ViewBag.TotalPages = totalPages;
+
+                        return View(data);
                     }
                     else
                     {
-                        return View(_context.UploadedFileInfo.OrderByDescending(f => f.UploadedOn).ToList());
+                        var (data, totalCount) = await _dataRepo.GetPaginatedDataAsync(userId, isInRole, pageNumber, pageSize);
+
+                        int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                        ViewBag.PageNumber = pageNumber;
+                        ViewBag.PageSize = pageSize;
+                        ViewBag.TotalPages = totalPages;
+
+                        return View(data);
                     }
                 }
 
