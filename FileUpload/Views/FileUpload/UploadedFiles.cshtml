@@ -89,14 +89,6 @@
             width: 100%;
         }
 
-    .pagination {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        width: 15vw;
-        margin: auto;
-    }
-
 </style>
 
 
@@ -111,6 +103,7 @@
 <div class="Success">
     @ViewBag.MessageSuccess
 </div>
+
 @if (!Model.Any())
 {
     <div class="alert alert-info">
@@ -298,24 +291,61 @@ else
 
     </div>
 }
-<form id="paginationForm" method="Get" action="@Url.Action("UploadedFiles")">
-    <input type="hidden" name="page" id="pageInput" value="@ViewBag.PageNumber" />
-</form>
-<div class="pagination">
-    @if (ViewBag.PageNumber > 1)
-    {
-        @* <a href="@Url.Action("UploadedFiles", new { page = ViewBag.PageNumber - 1, pageSize = ViewBag.PageSize })" class="btn btn-primary">Previous</a> *@
-        <button type="button" onclick="changePage(@ViewBag.PageNumber - 1)" class="btn-primary btn"><i class="bi bi-arrow-left"></i>  Previous</button>
 
-    }
-    <strong><span>Page @ViewBag.PageNumber of @ViewBag.TotalPages</span></strong>
-    @if (ViewBag.PageNumber < ViewBag.TotalPages)
-    {
-        @* <a href="@Url.Action("UploadedFiles", new { page = ViewBag.PageNumber + 1, pageSize = ViewBag.PageSize })" class="btn btn-primary">Next</a> *@
-        <button type="button" onclick="changePage(@ViewBag.PageNumber + 1)" class="btn btn-primary">Next  <i class="bi bi-arrow-right"></i></button>
+@if (ViewBag.TotalPages == 1)
+{
 
-    }
-</div>
+}
+else
+{
+
+
+    <form id="paginationForm" method="Get" action="@Url.Action("UploadedFiles")">
+        <input type="hidden" name="page" id="pageInput" value="@ViewBag.PageNumber" />
+    </form>
+
+    <div class="d-flex justify-content-center align-items-center mt-4">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                @if (ViewBag.PageNumber > 1)
+                {
+                    <li class="page-item">
+                        <button type="button" onclick="changePage(1)" class="btn btn-outline-primary ">
+                            <i class="bi bi-chevron-double-left"></i>  First
+                        </button>
+                    </li>
+                    <li class="page-item">
+                        <button type="button" onclick="changePage(@ViewBag.PageNumber - 1)" class="page-link ">
+                            <i class="bi bi-chevron-left"></i>  Previous
+                        </button>
+                    </li>
+                }
+
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.PageNumber ? "active" : "")">
+                        <button type="button" onclick="changePage(@i)" class="page-link">@i</button>
+                    </li>
+                }
+
+                @if (ViewBag.PageNumber < ViewBag.TotalPages)
+                {
+                    <li class="page-item">
+                        <button type="button" onclick="changePage(@ViewBag.PageNumber + 1)" class="page-link ">
+                            Next  <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </li>
+                    <li class="page-item">
+                        <button type="button" onclick="changePage(@ViewBag.TotalPages)" class="btn btn-outline-primary">
+                            Last  <i class="bi bi-chevron-double-right"></i>
+                        </button>
+                    </li>
+                }
+            </ul>
+        </nav>
+    </div>
+
+}
 
 <button id="goToTopButton" class="go-to-top-btn">↑ Go to Top</button>
 <script>
